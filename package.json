@@ -12,6 +12,7 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
     "motion": "^12.0.0",
     "html-to-image": "^1.11.13",
     "react": "^18.3.1",
