@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
-    "ignore": ["node_modules", "dist"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      ".output",
+      ".nitro",
+      ".tanstack",
+      "quiztime-start-ref",
+      "src/routeTree.gen.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

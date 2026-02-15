@@ -5,10 +5,11 @@ App de quiz em formato vertical (9:16), com categorias e niveis, animacoes, expo
 ## Stack
 
 - Vite + React + TypeScript
+- TanStack Start (file-based routes)
 - TailwindCSS
 - Motion (`motion/react`)
 - html-to-image
-- vite-plugin-pwa
+- PWA (manifest + service worker local)
 - Biome (lint + format)
 - Bun
 
@@ -29,12 +30,14 @@ bun install
 bun run dev
 ```
 
+As rotas ficam em `src/routes` (TanStack Router file-based).
+
 ## PWA (instalavel e offline)
 
 O app esta configurado como PWA com:
 
-- `manifest.webmanifest` gerado automaticamente no build
-- service worker com `autoUpdate`
+- `public/manifest.webmanifest`
+- `public/sw.js` (registro automatico no client)
 - cache de assets locais (incluindo imagens de `public/assets`)
 - icones em `public/pwa`
 

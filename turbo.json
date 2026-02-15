@@ -10,7 +10,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".output/**", ".tanstack/**"]
     },
     "lint": {
       "dependsOn": ["^lint"],
