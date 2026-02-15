@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f114a" />
+      <stop offset="50%" stop-color="#7d2ae8" />
+      <stop offset="100%" stop-color="#14b8ff" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="url(#g)" />
+  <circle cx="256" cy="206" r="122" fill="#ffffff22" stroke="#fff6" stroke-width="6" />
+  <circle cx="256" cy="206" r="84" fill="#ffffff33" />
+  <rect x="96" y="346" width="320" height="88" rx="24" fill="#00000044" stroke="#fff5" stroke-width="4" />
+  <text x="256" y="398" text-anchor="middle" fill="#fff" font-family="Verdana, Arial" font-size="32" font-weight="700" letter-spacing="2">TEMPLATE</text>
+</svg>
