@@ -3,7 +3,6 @@ import type { AccessMode } from '@/types/quiz'
 interface AuthScreenProps {
   mode: AccessMode
   onGoogleLogin: () => void
-  onAppleLogin: () => void
 }
 
 const modeLabel: Record<AccessMode, string> = {
@@ -12,7 +11,7 @@ const modeLabel: Record<AccessMode, string> = {
   ranking: 'Preview de ranking',
 }
 
-export const AuthScreen = ({ mode, onGoogleLogin, onAppleLogin }: AuthScreenProps) => {
+export const AuthScreen = ({ mode, onGoogleLogin }: AuthScreenProps) => {
   return (
     <section className="mt-4 flex flex-1 flex-col justify-center">
       <div className="rounded-2xl border border-white/20 bg-black/30 p-4 text-center">
@@ -33,13 +32,6 @@ export const AuthScreen = ({ mode, onGoogleLogin, onAppleLogin }: AuthScreenProp
             className="rounded-xl border border-white/30 bg-white/90 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-900"
           >
             Entrar com Google
-          </button>
-          <button
-            type="button"
-            onClick={onAppleLogin}
-            className="rounded-xl border border-white/30 bg-black/35 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-white"
-          >
-            Entrar com Apple
           </button>
         </div>
 

@@ -37,7 +37,7 @@ O app funciona sem backend, mas se voce configurar Supabase ele passa a salvar e
 - perguntas
 - ranking
 - fotos/avatares (Storage)
-- sessao/login (Google e Apple)
+- sessao/login (Google)
 
 ### 1) Criar variaveis de ambiente
 
@@ -81,8 +81,7 @@ on conflict (email) do nothing;
 No painel do Supabase:
 
 1. `Authentication -> Providers -> Google` (habilitar e configurar client ID/secret).
-2. `Authentication -> Providers -> Apple` (habilitar e configurar).
-3. Em `URL Configuration`, adicionar sua URL local e de producao como redirect.
+2. Em `URL Configuration`, adicionar sua URL local e de producao como redirect.
 
 Obs: TikTok nao e provider nativo no Supabase Auth. Para TikTok, use `OIDC` customizado.
 
@@ -107,7 +106,7 @@ bun run lint:fix
 
 ## Como usar (modo admin)
 
-1. Faça login com Google/Apple.
+1. Faça login com Google.
 2. Use uma conta autorizada em `VITE_ADMIN_EMAILS` + `admin_users`.
 3. Abra o app e clique em `Comecar`.
 4. Escolha uma categoria.
@@ -122,7 +121,7 @@ bun run lint:fix
 ## Como usar (modo respondente)
 
 1. Abra o link recebido (`?respond=...`).
-2. Faça login com Google/Apple.
+2. Faça login com Google.
 3. Nome e avatar sao preenchidos automaticamente (pode ajustar se quiser).
 4. Responda as perguntas.
 5. Clique em `Corrigir` e depois finalize.
