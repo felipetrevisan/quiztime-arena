@@ -2,6 +2,7 @@ import { ProgressBar } from '@/components/ProgressBar'
 import { QuestionRow } from '@/components/QuestionRow'
 import type { Level, ThemeOption } from '@/types/quiz'
 import { motion } from 'motion/react'
+import { useState } from 'react'
 
 interface QuizScreenProps {
   level: Level
@@ -21,6 +22,7 @@ interface QuizScreenProps {
   onImageUpload: (questionId: string, file: File) => void
   onCorrect: () => void
   onFinishLevel: () => void
+  onTakeScreenshot?: () => Promise<void>
 }
 
 export const QuizScreen = ({
@@ -41,13 +43,28 @@ export const QuizScreen = ({
   onImageUpload,
   onCorrect,
   onFinishLevel,
+  onTakeScreenshot,
 }: QuizScreenProps) => {
+  const [isCapturing, setIsCapturing] = useState(false)
   const total = level.questions.length
   const answeredCount = level.questions.filter((question) =>
     Boolean(answers[question.id]?.trim()),
   ).length
   const progress = corrected ? 100 : (answeredCount / total) * 100
   const currentQuestion = Math.min(answeredCount + 1, total)
+
+  const handleTakeScreenshot = async () => {
+    if (!onTakeScreenshot || isCapturing) {
+      return
+    }
+
+    setIsCapturing(true)
+    try {
+      await onTakeScreenshot()
+    } finally {
+      setIsCapturing(false)
+    }
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -148,13 +165,30 @@ export const QuizScreen = ({
 
       <div className="mt-3 flex gap-2">
         {!corrected ? (
-          <button
-            type="button"
-            onClick={onCorrect}
-            className="flex-1 rounded-xl border border-white/25 bg-white/90 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-900"
-          >
-            {isBlankMode ? 'Finalizar respostas' : 'Corrigir'}
-          </button>
+          <>
+            {isResponderMode && onTakeScreenshot && (
+              <button
+                type="button"
+                onClick={() => void handleTakeScreenshot()}
+                disabled={isCapturing}
+                className="rounded-xl border border-white/30 bg-black/35 px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCapturing ? 'Capturando...' : 'Screenshot'}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onCorrect}
+              className="flex-1 rounded-xl border border-white/25 bg-white/90 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-900"
+            >
+              {isResponderMode
+                ? 'Enviar respostas'
+                : isBlankMode
+                  ? 'Finalizar respostas'
+                  : 'Corrigir'}
+            </button>
+          </>
         ) : (
           <button
             type="button"
