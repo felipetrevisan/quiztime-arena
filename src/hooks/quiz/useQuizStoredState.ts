@@ -40,10 +40,21 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
   const [corrected, setCorrected] = useState(false)
   const [frameImage, setFrameImage] = useState<string | null>(null)
   const [uploadedImages, setUploadedImages] = useState<Record<string, string>>({})
-  const [shareLinks, setShareLinks] = useState<Record<string, string>>({})
-  const [shareQuizIds, setShareQuizIds] = useState<Record<string, string>>({})
-  const [rankingPreviewLinks, setRankingPreviewLinks] = useState<Record<string, string>>({})
-  const [shortLinks, setShortLinks] = useState<Record<string, string>>({})
+  const [shareLinks, setShareLinks] = useLocalStorageState<Record<string, string>>(
+    'quiztime.share-links.v1',
+    {},
+  )
+  const [shareQuizIds, setShareQuizIds] = useLocalStorageState<Record<string, string>>(
+    'quiztime.share-quiz-ids.v1',
+    {},
+  )
+  const [rankingPreviewLinks, setRankingPreviewLinks] = useLocalStorageState<
+    Record<string, string>
+  >('quiztime.ranking-preview-links.v1', {})
+  const [shortLinks, setShortLinks] = useLocalStorageState<Record<string, string>>(
+    'quiztime.short-links.v1',
+    {},
+  )
   const [sharedQuiz, setSharedQuiz] = useState<ShareQuizPayload | null>(null)
   const [rankingPreviewQuizId, setRankingPreviewQuizId] = useState<string | null>(null)
   const [accessMode, setAccessMode] = useState<AccessMode>('admin')
