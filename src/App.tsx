@@ -1,12 +1,11 @@
 import { AnswerSheet } from '@/components/AnswerSheet'
-import { BuilderPanel } from '@/components/BuilderPanel'
-import { ConfigPanel } from '@/components/ConfigPanel'
 import { Frame } from '@/components/Frame'
 import { Header } from '@/components/Header'
 import { initialCategories } from '@/data/levels'
 import { themes } from '@/data/themes'
 import { AccessDeniedScreen } from '@/pages/AccessDeniedScreen'
 import { AuthScreen } from '@/pages/AuthScreen'
+import { BuilderScreen } from '@/pages/BuilderScreen'
 import { CategoriesScreen } from '@/pages/CategoriesScreen'
 import { FinalScreen } from '@/pages/FinalScreen'
 import { HomeScreen } from '@/pages/HomeScreen'
@@ -37,7 +36,6 @@ import type {
   Screen,
   ShareQuizPayload,
   ShareSubmissionPayload,
-  ThemeId,
 } from '@/types/quiz'
 import { createEmptyLevel } from '@/utils/builder'
 import { fileToAvatarDataUrl } from '@/utils/image'
@@ -462,13 +460,13 @@ function App() {
     setScreen('quiz')
   }
 
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+  const handleGoogleLogin = async () => {
     if (!supabase) {
       return
     }
 
     await supabase.auth.signInWithOAuth({
-      provider,
+      provider: 'google',
       options: {
         redirectTo: window.location.href,
       },
@@ -928,12 +926,14 @@ function App() {
       !isResponderMode &&
       !selectedCategory &&
       screen !== 'home' &&
+      screen !== 'builder' &&
       screen !== 'categories' &&
       screen !== 'ranking'
     ) {
       return (
         <HomeScreen
           onStart={() => setScreen('categories')}
+          onOpenBuilder={() => setScreen('builder')}
           onOpenRanking={() => setScreen('ranking')}
         />
       )
@@ -944,7 +944,34 @@ function App() {
         return (
           <HomeScreen
             onStart={() => setScreen('categories')}
+            onOpenBuilder={() => setScreen('builder')}
             onOpenRanking={() => setScreen('ranking')}
+          />
+        )
+
+      case 'builder':
+        return (
+          <BuilderScreen
+            title={config.title}
+            subtitle={config.subtitle}
+            themeId={config.themeId}
+            themes={themes}
+            categories={categories}
+            onTitleChange={(value) => setConfig((previous) => ({ ...previous, title: value }))}
+            onSubtitleChange={(value) =>
+              setConfig((previous) => ({ ...previous, subtitle: value }))
+            }
+            onThemeChange={(themeId) =>
+              setConfig((previous) => ({
+                ...previous,
+                themeId,
+              }))
+            }
+            onBackgroundUpload={handleBackgroundUpload}
+            onAddCategory={handleAddCategory}
+            onAddLevel={handleAddLevel}
+            onUpdateQuestion={handleUpdateQuestion}
+            onBack={() => setScreen('home')}
           />
         )
 
@@ -1074,7 +1101,7 @@ function App() {
         return null
     }
   })()
-  const showSidePanels = !isResponderMode && !isRankingPreviewMode
+  const centerMainContent = isResponderMode || isRankingPreviewMode
   const requiresAuth = hasRemote()
   const canAccessMode =
     !requiresAuth || (accessMode === 'admin' ? hasSession && isAdmin : hasSession)
@@ -1095,13 +1122,7 @@ function App() {
     }
 
     if (!hasSession) {
-      return (
-        <AuthScreen
-          mode={accessMode}
-          onGoogleLogin={() => void handleSocialLogin('google')}
-          onAppleLogin={() => void handleSocialLogin('apple')}
-        />
-      )
+      return <AuthScreen mode={accessMode} onGoogleLogin={() => void handleGoogleLogin()} />
     }
 
     if (accessMode === 'admin' && !isAdmin) {
@@ -1116,78 +1137,48 @@ function App() {
   return (
     <div
       className={`min-h-screen bg-[#080915] px-3 py-4 sm:px-6 ${
-        showSidePanels ? '' : 'flex items-center justify-center'
+        centerMainContent ? 'flex items-center justify-center' : ''
       }`}
     >
-      <div
-        className={`mx-auto flex w-full flex-col gap-4 ${
-          showSidePanels ? 'max-w-6xl lg:flex-row lg:items-start' : 'max-w-[460px]'
-        }`}
-      >
-        <div className="w-full lg:max-w-[460px]">
-          <Frame
-            frameRef={frameRef}
-            theme={activeTheme}
-            backgroundImage={isResponderMode ? null : frameImage}
-          >
-            <Header
-              title={headerTitle}
-              subtitle={headerSubtitle}
-              headerColor={activeTheme.headerColor}
-            />
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={screen}
-                variants={screenVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="min-h-0 flex-1 overflow-hidden"
-              >
-                {protectedContent}
-              </motion.div>
-            </AnimatePresence>
-          </Frame>
-        </div>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
+        {hasRemote() &&
+          hasSession &&
+          canAccessMode &&
+          !isResponderMode &&
+          !isRankingPreviewMode && (
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+            >
+              Sair ({session?.user.email})
+            </button>
+          )}
 
-        {showSidePanels && canAccessMode && (
-          <div className="grid w-full max-w-md gap-4">
-            {hasRemote() && hasSession && (
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
-              >
-                Sair ({session?.user.email})
-              </button>
-            )}
-            <ConfigPanel
-              title={config.title}
-              subtitle={config.subtitle}
-              themeId={config.themeId}
-              themes={themes}
-              onTitleChange={(value) => setConfig((previous) => ({ ...previous, title: value }))}
-              onSubtitleChange={(value) =>
-                setConfig((previous) => ({ ...previous, subtitle: value }))
-              }
-              onThemeChange={(themeId: ThemeId) =>
-                setConfig((previous) => ({
-                  ...previous,
-                  themeId,
-                }))
-              }
-              onBackgroundUpload={handleBackgroundUpload}
-            />
-
-            <BuilderPanel
-              categories={categories}
-              onAddCategory={handleAddCategory}
-              onAddLevel={handleAddLevel}
-              onUpdateQuestion={handleUpdateQuestion}
-            />
-          </div>
-        )}
+        <Frame
+          frameRef={frameRef}
+          theme={activeTheme}
+          backgroundImage={isResponderMode ? null : frameImage}
+        >
+          <Header
+            title={headerTitle}
+            subtitle={headerSubtitle}
+            headerColor={activeTheme.headerColor}
+          />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={screen}
+              variants={screenVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="min-h-0 flex-1 overflow-hidden"
+            >
+              {protectedContent}
+            </motion.div>
+          </AnimatePresence>
+        </Frame>
       </div>
 
       {!isResponderMode && !isRankingPreviewMode && canAccessMode && selectedLevel && (

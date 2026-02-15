@@ -1,9 +1,10 @@
 interface HomeScreenProps {
   onStart: () => void
+  onOpenBuilder: () => void
   onOpenRanking: () => void
 }
 
-export const HomeScreen = ({ onStart, onOpenRanking }: HomeScreenProps) => {
+export const HomeScreen = ({ onStart, onOpenBuilder, onOpenRanking }: HomeScreenProps) => {
   return (
     <section className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
       <p className="mb-3 rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/80">
@@ -31,6 +32,13 @@ export const HomeScreen = ({ onStart, onOpenRanking }: HomeScreenProps) => {
           className="rounded-2xl border border-white/30 bg-black/30 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white"
         >
           Ver ranking
+        </button>
+        <button
+          type="button"
+          onClick={onOpenBuilder}
+          className="rounded-2xl border border-cyan-200/45 bg-cyan-500/20 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-cyan-100"
+        >
+          Abrir builder
         </button>
       </div>
     </section>

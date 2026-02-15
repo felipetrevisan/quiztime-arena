@@ -1,8 +1,11 @@
 import type { Category, LevelMode } from '@/types/quiz'
 import { useEffect, useMemo, useState } from 'react'
 
+export type BuilderPanelSection = 'category' | 'level' | 'answer'
+
 interface BuilderPanelProps {
   categories: Category[]
+  section?: BuilderPanelSection
   onAddCategory: (category: Category) => void | Promise<void>
   onAddLevel: (
     categoryId: string,
@@ -35,6 +38,7 @@ const parseAcceptedAnswers = (value: string): string[] =>
 
 export const BuilderPanel = ({
   categories,
+  section,
   onAddCategory,
   onAddLevel,
   onUpdateQuestion,
@@ -132,6 +136,10 @@ export const BuilderPanel = ({
     setAcceptedAnswersInput(selectedQuestion.acceptedAnswers.join(', '))
   }, [selectedQuestion])
 
+  const showCategorySection = !section || section === 'category'
+  const showLevelSection = !section || section === 'level'
+  const showAnswerSection = !section || section === 'answer'
+
   return (
     <aside className="space-y-3 rounded-3xl border border-white/20 bg-black/35 p-4 text-white shadow-xl backdrop-blur-sm">
       <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em]">Builder</h2>
@@ -139,193 +147,201 @@ export const BuilderPanel = ({
         Crie niveis com perguntas ou em branco com 8 alternativas.
       </p>
 
-      <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-          Nova categoria
-        </p>
-        <input
-          value={categoryTitle}
-          onChange={(event) => setCategoryTitle(event.target.value)}
-          placeholder="Titulo"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <input
-          value={categoryDescription}
-          onChange={(event) => setCategoryDescription(event.target.value)}
-          placeholder="Descricao"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <button
-          type="button"
-          onClick={async () => {
-            if (!categoryTitle.trim()) return
+      {showCategorySection && (
+        <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            Nova categoria
+          </p>
+          <input
+            value={categoryTitle}
+            onChange={(event) => setCategoryTitle(event.target.value)}
+            placeholder="Titulo"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <input
+            value={categoryDescription}
+            onChange={(event) => setCategoryDescription(event.target.value)}
+            placeholder="Descricao"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              if (!categoryTitle.trim()) return
 
-            const id = slugify(categoryTitle)
-            await onAddCategory({
-              id,
-              title: categoryTitle.trim(),
-              subtitle: 'Personalizada',
-              description: categoryDescription.trim() || 'Categoria criada no builder.',
-              coverImage: '/assets/covers/builder.svg',
-              levels: [],
-            })
-            setCategoryTitle('')
-            setCategoryDescription('')
-            setCategoryId(id)
-          }}
-          className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
-        >
-          Adicionar categoria
-        </button>
-      </div>
+              const id = slugify(categoryTitle)
+              await onAddCategory({
+                id,
+                title: categoryTitle.trim(),
+                subtitle: 'Personalizada',
+                description: categoryDescription.trim() || 'Categoria criada no builder.',
+                coverImage: '/assets/covers/builder.svg',
+                levels: [],
+              })
+              setCategoryTitle('')
+              setCategoryDescription('')
+              setCategoryId(id)
+            }}
+            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+          >
+            Adicionar categoria
+          </button>
+        </div>
+      )}
 
-      <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Novo nivel</p>
-        <select
-          value={categoryId}
-          onChange={(event) => setCategoryId(event.target.value)}
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        >
-          {categoryOptions.map((option) => (
-            <option key={option.id} value={option.id} className="bg-slate-900">
-              {option.label}
+      {showLevelSection && (
+        <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            Novo nivel
+          </p>
+          <select
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          >
+            {categoryOptions.map((option) => (
+              <option key={option.id} value={option.id} className="bg-slate-900">
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <input
+            value={levelTitle}
+            onChange={(event) => setLevelTitle(event.target.value)}
+            placeholder="Titulo do nivel"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <input
+            value={levelDescription}
+            onChange={(event) => setLevelDescription(event.target.value)}
+            placeholder="Descricao"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <select
+            value={levelMode}
+            onChange={(event) => setLevelMode(event.target.value as LevelMode)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+            aria-label="Tipo de nivel"
+          >
+            <option value="quiz" className="bg-slate-900">
+              Quiz com perguntas
             </option>
-          ))}
-        </select>
-        <input
-          value={levelTitle}
-          onChange={(event) => setLevelTitle(event.target.value)}
-          placeholder="Titulo do nivel"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <input
-          value={levelDescription}
-          onChange={(event) => setLevelDescription(event.target.value)}
-          placeholder="Descricao"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <select
-          value={levelMode}
-          onChange={(event) => setLevelMode(event.target.value as LevelMode)}
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-          aria-label="Tipo de nivel"
-        >
-          <option value="quiz" className="bg-slate-900">
-            Quiz com perguntas
-          </option>
-          <option value="blank" className="bg-slate-900">
-            Quiz em branco (8 alternativas)
-          </option>
-        </select>
-        <button
-          type="button"
-          onClick={async () => {
-            if (!categoryId || !levelTitle.trim()) return
-            await onAddLevel(
-              categoryId,
-              levelTitle.trim(),
-              levelDescription.trim() || 'Novo nivel criado no builder.',
-              levelMode,
-            )
-            setLevelTitle('')
-            setLevelDescription('')
-          }}
-          className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
-        >
-          Adicionar nivel
-        </button>
-      </div>
-
-      <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-          Gabarito automatico
-        </p>
-        <select
-          value={questionCategoryId}
-          onChange={(event) => setQuestionCategoryId(event.target.value)}
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        >
-          {categoryOptions.map((option) => (
-            <option key={option.id} value={option.id} className="bg-slate-900">
-              {option.label}
+            <option value="blank" className="bg-slate-900">
+              Quiz em branco (8 alternativas)
             </option>
-          ))}
-        </select>
+          </select>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!categoryId || !levelTitle.trim()) return
+              await onAddLevel(
+                categoryId,
+                levelTitle.trim(),
+                levelDescription.trim() || 'Novo nivel criado no builder.',
+                levelMode,
+              )
+              setLevelTitle('')
+              setLevelDescription('')
+            }}
+            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+          >
+            Adicionar nivel
+          </button>
+        </div>
+      )}
 
-        <select
-          value={questionLevelId}
-          onChange={(event) => setQuestionLevelId(event.target.value)}
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        >
-          {levelOptions.map((level) => (
-            <option key={level.id} value={level.id} className="bg-slate-900">
-              {level.title}
-            </option>
-          ))}
-        </select>
+      {showAnswerSection && (
+        <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            Gabarito automatico
+          </p>
+          <select
+            value={questionCategoryId}
+            onChange={(event) => setQuestionCategoryId(event.target.value)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          >
+            {categoryOptions.map((option) => (
+              <option key={option.id} value={option.id} className="bg-slate-900">
+                {option.label}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={questionId}
-          onChange={(event) => setQuestionId(event.target.value)}
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        >
-          {questionOptions.map((question, index) => (
-            <option key={question.id} value={question.id} className="bg-slate-900">
-              {selectedLevel?.mode === 'blank'
-                ? `Alternativa ${index + 1}`
-                : `Pergunta ${index + 1}`}
-            </option>
-          ))}
-        </select>
+          <select
+            value={questionLevelId}
+            onChange={(event) => setQuestionLevelId(event.target.value)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          >
+            {levelOptions.map((level) => (
+              <option key={level.id} value={level.id} className="bg-slate-900">
+                {level.title}
+              </option>
+            ))}
+          </select>
 
-        <input
-          value={questionPrompt}
-          onChange={(event) => setQuestionPrompt(event.target.value)}
-          placeholder="Texto da pergunta (opcional no modo em branco)"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <input
-          value={correctAnswerDisplay}
-          onChange={(event) => setCorrectAnswerDisplay(event.target.value)}
-          placeholder="Resposta correta principal"
-          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
-        <textarea
-          value={acceptedAnswersInput}
-          onChange={(event) => setAcceptedAnswersInput(event.target.value)}
-          placeholder="Sinonimos aceitos (separe por virgula, ponto e virgula ou quebra de linha)"
-          className="h-20 w-full resize-none rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
-        />
+          <select
+            value={questionId}
+            onChange={(event) => setQuestionId(event.target.value)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          >
+            {questionOptions.map((question, index) => (
+              <option key={question.id} value={question.id} className="bg-slate-900">
+                {selectedLevel?.mode === 'blank'
+                  ? `Alternativa ${index + 1}`
+                  : `Pergunta ${index + 1}`}
+              </option>
+            ))}
+          </select>
 
-        <button
-          type="button"
-          onClick={async () => {
-            if (!questionCategoryId || !questionLevelId || !questionId) return
+          <input
+            value={questionPrompt}
+            onChange={(event) => setQuestionPrompt(event.target.value)}
+            placeholder="Texto da pergunta (opcional no modo em branco)"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <input
+            value={correctAnswerDisplay}
+            onChange={(event) => setCorrectAnswerDisplay(event.target.value)}
+            placeholder="Resposta correta principal"
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
+          <textarea
+            value={acceptedAnswersInput}
+            onChange={(event) => setAcceptedAnswersInput(event.target.value)}
+            placeholder="Sinonimos aceitos (separe por virgula, ponto e virgula ou quebra de linha)"
+            className="h-20 w-full resize-none rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+          />
 
-            const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
-            const correct = correctAnswerDisplay.trim()
-            const hasCorrectAlready = acceptedAnswers.some(
-              (item) => item.toLowerCase() === correct.toLowerCase(),
-            )
+          <button
+            type="button"
+            onClick={async () => {
+              if (!questionCategoryId || !questionLevelId || !questionId) return
 
-            if (correct && !hasCorrectAlready) {
-              acceptedAnswers.unshift(correct)
-            }
+              const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
+              const correct = correctAnswerDisplay.trim()
+              const hasCorrectAlready = acceptedAnswers.some(
+                (item) => item.toLowerCase() === correct.toLowerCase(),
+              )
 
-            await onUpdateQuestion({
-              categoryId: questionCategoryId,
-              levelId: questionLevelId,
-              questionId,
-              prompt: questionPrompt.trim(),
-              correctAnswerDisplay: correct,
-              acceptedAnswers,
-            })
-          }}
-          className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
-        >
-          Salvar gabarito
-        </button>
-      </div>
+              if (correct && !hasCorrectAlready) {
+                acceptedAnswers.unshift(correct)
+              }
+
+              await onUpdateQuestion({
+                categoryId: questionCategoryId,
+                levelId: questionLevelId,
+                questionId,
+                prompt: questionPrompt.trim(),
+                correctAnswerDisplay: correct,
+                acceptedAnswers,
+              })
+            }}
+            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+          >
+            Salvar gabarito
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

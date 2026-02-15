@@ -1,5 +1,6 @@
 export type Screen =
   | 'home'
+  | 'builder'
   | 'categories'
   | 'levels'
   | 'quiz'
