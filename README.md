@@ -1,6 +1,6 @@
 # QuizTime Arena
 
-App de quiz em formato vertical (9:16), com categorias e niveis, animacoes, exportacao PNG, compartilhamento por link, modo respondente e ranking local.
+App de quiz em formato vertical (9:16), com categorias e niveis, animacoes, exportacao PNG, compartilhamento por link, modo respondente e ranking.
 
 ## Stack
 
@@ -14,6 +14,7 @@ App de quiz em formato vertical (9:16), com categorias e niveis, animacoes, expo
 ## Requisitos
 
 - Bun instalado (`bun --version`)
+- (Opcional) Projeto Supabase para persistencia remota
 
 ## Instalar dependencias
 
@@ -26,6 +27,69 @@ bun install
 ```bash
 bun run dev
 ```
+
+## Supabase (persistencia + login social)
+
+O app funciona sem backend, mas se voce configurar Supabase ele passa a salvar e carregar:
+
+- categorias
+- niveis
+- perguntas
+- ranking
+- fotos/avatares (Storage)
+- sessao/login (Google e Apple)
+
+### 1) Criar variaveis de ambiente
+
+Crie um `.env.local` baseado em `.env.example`:
+
+```bash
+cp .env.example .env.local
+```
+
+Preencha:
+
+```env
+VITE_SUPABASE_PROJECT_ID=...
+VITE_SUPABASE_PUBLISHABLE_KEY=...
+VITE_ADMIN_EMAILS=seu-email@exemplo.com
+```
+
+### 2) Aplicar schema no Supabase
+
+No SQL Editor do Supabase, execute:
+
+- `supabase/schema.sql`
+
+Esse arquivo cria:
+
+- tabelas (`categories`, `levels`, `questions`, `rankings`, `admin_users`)
+- bucket `quiz-assets`
+- policies com auth:
+  - leitura para usuarios autenticados
+  - escrita somente admin
+
+Depois, adicione seu email como admin:
+
+```sql
+insert into public.admin_users (email) values ('seu-email@exemplo.com')
+on conflict (email) do nothing;
+```
+
+### 3) Configurar OAuth no Supabase Auth
+
+No painel do Supabase:
+
+1. `Authentication -> Providers -> Google` (habilitar e configurar client ID/secret).
+2. `Authentication -> Providers -> Apple` (habilitar e configurar).
+3. Em `URL Configuration`, adicionar sua URL local e de producao como redirect.
+
+Obs: TikTok nao e provider nativo no Supabase Auth. Para TikTok, use `OIDC` customizado.
+
+### 4) Subir com fallback local
+
+- Se as variaveis de Supabase estiverem definidas: usa banco/storage remoto.
+- Se nao estiverem: continua usando localStorage.
 
 ## Build de producao
 
@@ -43,29 +107,34 @@ bun run lint:fix
 
 ## Como usar (modo admin)
 
-1. Abra o app e clique em `Comecar`.
-2. Escolha uma categoria.
-3. Escolha um nivel.
-4. Preencha respostas e clique em `Corrigir`.
-5. Finalize o nivel para salvar pontuacao.
-6. Use `Gerar link` para criar link de resposta para outra pessoa.
-7. Use `Copiar link` para copiar rapidamente.
-8. Use `Encurtar` para tentar gerar link curto automaticamente por API.
+1. Faça login com Google/Apple.
+2. Use uma conta autorizada em `VITE_ADMIN_EMAILS` + `admin_users`.
+3. Abra o app e clique em `Comecar`.
+4. Escolha uma categoria.
+5. Escolha um nivel.
+6. Preencha respostas e clique em `Corrigir`.
+7. Finalize o nivel para salvar pontuacao.
+8. Use `Gerar link` para criar link de resposta para outra pessoa.
+9. Use `Copiar link` para copiar rapidamente.
+10. Use `Encurtar` para tentar gerar link curto automaticamente por API.
+11. Use `Copiar ranking` para compartilhar o preview do ranking daquele quiz.
 
 ## Como usar (modo respondente)
 
 1. Abra o link recebido (`?respond=...`).
-2. Preencha nome e avatar (opcional) do jogador.
-3. Responda as perguntas.
-4. Clique em `Corrigir` e depois finalize.
-5. Gere o `link de envio` do resultado.
-6. Envie esse link para o criador do quiz.
+2. Faça login com Google/Apple.
+3. Nome e avatar sao preenchidos automaticamente (pode ajustar se quiser).
+4. Responda as perguntas.
+5. Clique em `Corrigir` e depois finalize.
+6. Gere o `link de envio` do resultado.
+7. Envie esse link para o criador do quiz.
 
 ## Ranking
 
 - O criador abre o link de importacao (`?import=...`).
-- O resultado e salvo no ranking local (localStorage).
+- O resultado e salvo no ranking local e, com Supabase ativo, tambem no banco remoto.
 - O ranking mostra nome, avatar e pontuacao.
+- Preview publico autenticado por quiz: `?ranking=<quizId>`.
 
 ## Tema e layout
 
@@ -110,8 +179,10 @@ Salvo em `localStorage`:
 - rascunho do quiz
 - ranking importado
 
+Com Supabase ativo, esses dados tambem ficam persistidos remotamente.
+
 ## Observacoes
 
-- App sem backend.
-- Compartilhamento e importacao feitos por links codificados.
-- Encurtamento tenta API automatica; se indisponivel, o link original continua funcionando.
+- Compartilhamento e importacao sao feitos por links codificados.
+- Encurtamento tenta API automatica; se indisponivel, copia o link original.
+- Sem `VITE_SUPABASE_PROJECT_ID` + `VITE_SUPABASE_PUBLISHABLE_KEY`, o app cai em modo local (sem login social).
