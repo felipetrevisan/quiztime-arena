@@ -101,7 +101,7 @@ function App() {
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="min-h-0 flex-1 overflow-hidden"
+                className="flex min-h-0 flex-1 overflow-hidden"
               >
                 {protectedContent}
               </motion.div>
