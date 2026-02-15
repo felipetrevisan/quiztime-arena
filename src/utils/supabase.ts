@@ -7,9 +7,27 @@ const normalizeEnv = (value: string | undefined): string | null => {
   return withoutQuotes || null
 }
 
-const supabaseProjectId = normalizeEnv(import.meta.env.VITE_SUPABASE_PROJECT_ID)
-const supabasePublishableKey = normalizeEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
-const supabaseUrl = supabaseProjectId ? `https://${supabaseProjectId}.supabase.co` : null
+const legacySupabaseUrl = normalizeEnv(import.meta.env.VITE_SUPABASE_URL)
+const legacyAnonKey = normalizeEnv(import.meta.env.VITE_SUPABASE_ANON_KEY)
+const envSupabaseProjectId = normalizeEnv(import.meta.env.VITE_SUPABASE_PROJECT_ID)
+const envSupabasePublishableKey = normalizeEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+
+const projectIdFromUrl = (value: string | null): string | null => {
+  if (!value) return null
+
+  try {
+    const hostname = new URL(value).hostname
+    const firstPart = hostname.split('.')[0]
+    return firstPart || null
+  } catch {
+    return null
+  }
+}
+
+const supabaseProjectId = envSupabaseProjectId ?? projectIdFromUrl(legacySupabaseUrl)
+const supabasePublishableKey = envSupabasePublishableKey ?? legacyAnonKey
+const supabaseUrl =
+  legacySupabaseUrl ?? (supabaseProjectId ? `https://${supabaseProjectId}.supabase.co` : null)
 
 export const isSupabaseEnabled = Boolean(supabaseUrl && supabasePublishableKey)
 
