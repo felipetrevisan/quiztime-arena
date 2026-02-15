@@ -4,6 +4,7 @@ import { uploadRemoteAsset } from '@/services/supabase'
 import type { AppConfig, Category, ShareQuizPayload, ShareSubmissionPayload } from '@/types/quiz'
 import { fileToAvatarDataUrl } from '@/utils/image'
 import { copyText, encodePayload } from '@/utils/share'
+import { getPublicAppBaseUrl } from '@/utils/url'
 
 import { levelKey } from '../shared'
 import { getFileExtension } from './shared'
@@ -55,6 +56,8 @@ export const useShareActions = (params: UseShareActionsParams) => {
     setResponderAvatarDataUrl,
   } = params
 
+  const appBaseUrl = getPublicAppBaseUrl()
+
   const handleGenerateShareLink = async (levelId: string) => {
     if (!selectedCategory) {
       return
@@ -79,9 +82,9 @@ export const useShareActions = (params: UseShareActionsParams) => {
     }
 
     const encoded = encodePayload(payload)
-    const shareLink = `${window.location.origin}/?respond=${encoded}`
+    const shareLink = `${appBaseUrl}/?respond=${encoded}`
     const key = levelKey(selectedCategory.id, level.id)
-    const rankingPreviewLink = `${window.location.origin}/ranking?ranking=${encodeURIComponent(quizId)}`
+    const rankingPreviewLink = `${appBaseUrl}/ranking?ranking=${encodeURIComponent(quizId)}`
 
     setShareLinks((previous) => ({
       ...previous,
@@ -130,7 +133,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return
     }
 
-    const previewLink = `${window.location.origin}/ranking?ranking=${encodeURIComponent(quizId)}`
+    const previewLink = `${appBaseUrl}/ranking?ranking=${encodeURIComponent(quizId)}`
     setRankingPreviewLinks((previous) => ({
       ...previous,
       [key]: previewLink,
@@ -219,7 +222,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     }
 
     const encoded = encodePayload(payload)
-    return `${window.location.origin}/ranking?import=${encoded}`
+    return `${appBaseUrl}/ranking?import=${encoded}`
   }
 
   const handleResponderAvatarUpload = async (file: File) => {

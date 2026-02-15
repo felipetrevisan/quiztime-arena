@@ -70,6 +70,7 @@ cp .env.example .env.local
 Preencha:
 
 ```env
+VITE_PUBLIC_APP_URL=https://quiztime-arena.vercel.app
 VITE_SUPABASE_PROJECT_ID=...
 VITE_SUPABASE_PUBLISHABLE_KEY=...
 VITE_ADMIN_EMAILS=seu-email@exemplo.com
