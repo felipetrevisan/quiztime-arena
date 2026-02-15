@@ -8,6 +8,8 @@ export type Screen =
   | 'ranking'
   | 'respondResult'
 
+export type AccessMode = 'admin' | 'responder' | 'ranking'
+
 export type ThemeId = 'neon-purple' | 'candy-pink' | 'ice-blue' | 'soft-bw'
 export type LevelMode = 'quiz' | 'blank'
 

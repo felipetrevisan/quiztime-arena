@@ -5,6 +5,8 @@ import { Frame } from '@/components/Frame'
 import { Header } from '@/components/Header'
 import { initialCategories } from '@/data/levels'
 import { themes } from '@/data/themes'
+import { AccessDeniedScreen } from '@/pages/AccessDeniedScreen'
+import { AuthScreen } from '@/pages/AuthScreen'
 import { CategoriesScreen } from '@/pages/CategoriesScreen'
 import { FinalScreen } from '@/pages/FinalScreen'
 import { HomeScreen } from '@/pages/HomeScreen'
@@ -13,7 +15,19 @@ import { LevelsScreen } from '@/pages/LevelsScreen'
 import { QuizScreen } from '@/pages/QuizScreen'
 import { RankingScreen } from '@/pages/RankingScreen'
 import { RespondResultScreen } from '@/pages/RespondResultScreen'
+import {
+  fetchRemoteCategories,
+  fetchRemoteRankings,
+  hasRemote,
+  saveRemoteRanking,
+  seedRemoteCategories,
+  updateRemoteQuestionImage,
+  uploadRemoteAsset,
+  upsertRemoteCategory,
+  upsertRemoteLevel,
+} from '@/services/supabase'
 import type {
+  AccessMode,
   AppConfig,
   Category,
   LevelDraft,
@@ -31,6 +45,8 @@ import { isAnswerCorrect } from '@/utils/normalize'
 import { getBadge, getComment } from '@/utils/scoring'
 import { copyText, decodePayload, encodePayload } from '@/utils/share'
 import { useLocalStorageState } from '@/utils/storage'
+import { supabase } from '@/utils/supabase'
+import type { Session } from '@supabase/supabase-js'
 import { AnimatePresence, motion } from 'motion/react'
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -77,6 +93,52 @@ const getUniqueCategoryId = (categories: Category[], requestedId: string): strin
   return candidate
 }
 
+const mergeRankings = (
+  localEntries: RankingEntry[],
+  remoteEntries: RankingEntry[],
+): RankingEntry[] => {
+  const map = new Map<string, RankingEntry>()
+
+  for (const entry of [...remoteEntries, ...localEntries]) {
+    if (!map.has(entry.submissionId)) {
+      map.set(entry.submissionId, entry)
+    }
+  }
+
+  return [...map.values()].sort(
+    (left, right) => new Date(right.submittedAt).getTime() - new Date(left.submittedAt).getTime(),
+  )
+}
+
+const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean)
+
+const getUserProfile = (session: Session | null): { name: string; avatarUrl: string | null } => {
+  if (!session) {
+    return { name: '', avatarUrl: null }
+  }
+
+  const metadata = session.user.user_metadata as Record<string, unknown> | undefined
+
+  const displayNameCandidates = [
+    metadata?.name,
+    metadata?.full_name,
+    metadata?.user_name,
+    session.user.email,
+  ]
+  const avatarCandidates = [metadata?.avatar_url, metadata?.picture]
+
+  const name = displayNameCandidates.find((value): value is string => typeof value === 'string')
+  const avatarUrl = avatarCandidates.find((value): value is string => typeof value === 'string')
+
+  return {
+    name: name?.trim() ?? '',
+    avatarUrl: avatarUrl?.trim() ?? null,
+  }
+}
+
 function App() {
   const frameRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -108,15 +170,28 @@ function App() {
   const [frameImage, setFrameImage] = useState<string | null>(null)
   const [uploadedImages, setUploadedImages] = useState<Record<string, string>>({})
   const [shareLinks, setShareLinks] = useState<Record<string, string>>({})
+  const [shareQuizIds, setShareQuizIds] = useState<Record<string, string>>({})
+  const [rankingPreviewLinks, setRankingPreviewLinks] = useState<Record<string, string>>({})
   const [shortLinks, setShortLinks] = useState<Record<string, string>>({})
   const [sharedQuiz, setSharedQuiz] = useState<ShareQuizPayload | null>(null)
+  const [rankingPreviewQuizId, setRankingPreviewQuizId] = useState<string | null>(null)
+  const [accessMode, setAccessMode] = useState<AccessMode>('admin')
   const [sharedResult, setSharedResult] = useState<{ score: number; total: number } | null>(null)
   const [responderName, setResponderName] = useState('')
   const [responderAvatarDataUrl, setResponderAvatarDataUrl] = useState<string | null>(null)
+  const [responderAvatarFile, setResponderAvatarFile] = useState<File | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [authLoading, setAuthLoading] = useState(hasRemote())
   const frameImageRef = useRef<string | null>(null)
   const uploadedImagesRef = useRef<Record<string, string>>({})
+  const categoriesRef = useRef(categories)
+  const remoteBootstrappedRef = useRef(false)
 
   const isResponderMode = Boolean(sharedQuiz)
+  const isRankingPreviewMode = Boolean(rankingPreviewQuizId)
+  const hasSession = Boolean(session)
+  const userEmail = session?.user.email?.toLowerCase() ?? ''
+  const isAdmin = !hasRemote() || adminEmails.length === 0 || adminEmails.includes(userEmail)
 
   const selectedCategory =
     categories.find((category) => category.id === selectedCategoryId) ?? categories[0] ?? null
@@ -155,11 +230,80 @@ function App() {
   }, [records, selectedCategory])
 
   useEffect(() => {
+    categoriesRef.current = categories
+  }, [categories])
+
+  useEffect(() => {
+    if (!hasRemote() || !supabase) {
+      setAuthLoading(false)
+      return
+    }
+
+    let active = true
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return
+      setSession(data.session ?? null)
+      setAuthLoading(false)
+    })
+
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthLoading(false)
+    })
+
+    return () => {
+      active = false
+      data.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasRemote() || remoteBootstrappedRef.current) {
+      return
+    }
+
+    if (!session) {
+      return
+    }
+
+    remoteBootstrappedRef.current = true
+
+    void (async () => {
+      const remoteCategories = await fetchRemoteCategories()
+
+      if (remoteCategories && remoteCategories.length > 0) {
+        setCategories(remoteCategories)
+      } else if (isAdmin) {
+        await seedRemoteCategories(categoriesRef.current)
+      }
+
+      const remoteRankings = await fetchRemoteRankings()
+      if (remoteRankings && remoteRankings.length > 0) {
+        setRankings((previous) => mergeRankings(previous, remoteRankings))
+      }
+    })()
+  }, [isAdmin, session, setCategories, setRankings])
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const importParam = params.get('import')
     const respondParam = params.get('respond')
+    const rankingParam = params.get('ranking')
+
+    if (respondParam) {
+      setAccessMode('responder')
+    } else if (rankingParam) {
+      setAccessMode('ranking')
+    } else {
+      setAccessMode('admin')
+    }
 
     if (importParam) {
+      if (hasRemote() && (!session || !isAdmin)) {
+        return
+      }
+
       const submission = decodePayload<ShareSubmissionPayload>(importParam)
 
       if (submission?.version === 1) {
@@ -169,6 +313,7 @@ function App() {
           }
           return [submission, ...previous]
         })
+        void saveRemoteRanking(submission)
         setScreen('ranking')
       }
 
@@ -176,7 +321,6 @@ function App() {
       const nextQuery = params.toString()
       const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`
       window.history.replaceState(null, '', nextUrl)
-      return
     }
 
     if (respondParam) {
@@ -190,10 +334,18 @@ function App() {
         setCorrected(false)
         setResponderName('')
         setResponderAvatarDataUrl(null)
+        setResponderAvatarFile(null)
         setScreen('quiz')
       }
     }
-  }, [setRankings, setSelectedCategoryId])
+
+    if (rankingParam) {
+      setRankingPreviewQuizId(rankingParam)
+      setScreen('ranking')
+    } else {
+      setRankingPreviewQuizId(null)
+    }
+  }, [isAdmin, session, setRankings, setSelectedCategoryId])
 
   useEffect(() => {
     if (isResponderMode) {
@@ -209,6 +361,21 @@ function App() {
       setSelectedCategoryId(categories[0].id)
     }
   }, [categories, isResponderMode, selectedCategoryId, setSelectedCategoryId])
+
+  useEffect(() => {
+    if (!isResponderMode || !session) {
+      return
+    }
+
+    const profile = getUserProfile(session)
+    if (profile.name && !responderName.trim()) {
+      setResponderName(profile.name)
+    }
+
+    if (profile.avatarUrl && !responderAvatarDataUrl) {
+      setResponderAvatarDataUrl(profile.avatarUrl)
+    }
+  }, [isResponderMode, responderAvatarDataUrl, responderName, session])
 
   useEffect(() => {
     if (isResponderMode || screen !== 'quiz' || !selectedCategory || !selectedLevel) {
@@ -268,6 +435,7 @@ function App() {
     setSharedResult(null)
     setResponderName('')
     setResponderAvatarDataUrl(null)
+    setResponderAvatarFile(null)
   }
 
   const openLevel = (categoryId: string, levelId: string) => {
@@ -294,6 +462,27 @@ function App() {
     setScreen('quiz')
   }
 
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+    if (!supabase) {
+      return
+    }
+
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.href,
+      },
+    })
+  }
+
+  const handleSignOut = async () => {
+    if (!supabase) {
+      return
+    }
+
+    await supabase.auth.signOut()
+  }
+
   const handleCorrect = () => {
     if (!activeLevel) return
 
@@ -301,7 +490,17 @@ function App() {
 
     if (activeLevel.mode === 'blank') {
       for (const question of activeLevel.questions) {
-        evaluation[question.id] = Boolean(answers[question.id]?.trim())
+        const acceptedAnswers =
+          question.acceptedAnswers.length > 0
+            ? question.acceptedAnswers
+            : question.correctAnswerDisplay
+              ? [question.correctAnswerDisplay]
+              : []
+
+        evaluation[question.id] =
+          acceptedAnswers.length > 0
+            ? isAnswerCorrect(answers[question.id] ?? '', acceptedAnswers)
+            : Boolean(answers[question.id]?.trim())
       }
 
       setResults(evaluation)
@@ -310,10 +509,13 @@ function App() {
     }
 
     for (const question of activeLevel.questions) {
-      evaluation[question.id] = isAnswerCorrect(
-        answers[question.id] ?? '',
-        question.acceptedAnswers,
-      )
+      const acceptedAnswers =
+        question.acceptedAnswers.length > 0
+          ? question.acceptedAnswers
+          : question.correctAnswerDisplay
+            ? [question.correctAnswerDisplay]
+            : []
+      evaluation[question.id] = isAnswerCorrect(answers[question.id] ?? '', acceptedAnswers)
     }
 
     setResults(evaluation)
@@ -386,7 +588,7 @@ function App() {
     event.target.value = ''
   }
 
-  const handleQuestionImageUpload = (questionId: string, file: File) => {
+  const handleQuestionImageUpload = async (questionId: string, file: File) => {
     const url = URL.createObjectURL(file)
     setUploadedImages((previous) => {
       const oldUrl = previous[questionId]
@@ -399,14 +601,70 @@ function App() {
         [questionId]: url,
       }
     })
+
+    if (!hasRemote() || !selectedCategory || !selectedLevel) {
+      return
+    }
+
+    const extension = file.name.includes('.')
+      ? file.name.split('.')[file.name.split('.').length - 1]
+      : 'jpg'
+    const remotePath = `questions/${selectedCategory.id}/${selectedLevel.id}/${questionId}.${extension}`
+    const remoteUrl = await uploadRemoteAsset(file, remotePath)
+
+    if (!remoteUrl) {
+      return
+    }
+
+    await updateRemoteQuestionImage(questionId, remoteUrl)
+
+    setUploadedImages((previous) => {
+      const previousUrl = previous[questionId]
+      if (previousUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previousUrl)
+      }
+
+      return {
+        ...previous,
+        [questionId]: remoteUrl,
+      }
+    })
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== selectedCategory.id) {
+          return category
+        }
+
+        return {
+          ...category,
+          levels: category.levels.map((level) => {
+            if (level.id !== selectedLevel.id) {
+              return level
+            }
+
+            return {
+              ...level,
+              questions: level.questions.map((question) =>
+                question.id === questionId ? { ...question, imagePath: remoteUrl } : question,
+              ),
+            }
+          }),
+        }
+      }),
+    )
   }
 
-  const handleAddCategory = (category: Category) => {
-    setCategories((previous) => {
-      const uniqueId = getUniqueCategoryId(previous, category.id)
-      const nextCategory = { ...category, id: uniqueId }
-      return [...previous, nextCategory]
-    })
+  const handleAddCategory = async (category: Category) => {
+    const currentCategories = categoriesRef.current
+    const uniqueId = getUniqueCategoryId(currentCategories, category.id)
+    const nextCategory = { ...category, id: uniqueId }
+
+    setCategories((previous) => [...previous, nextCategory])
+
+    if (hasRemote()) {
+      await upsertRemoteCategory(nextCategory, currentCategories.length)
+    }
   }
 
   const handleAddLevel = (
@@ -416,6 +674,10 @@ function App() {
     mode: LevelMode,
   ) => {
     const newLevel = createEmptyLevel(levelTitle, levelDescription, mode)
+
+    const currentCategory = categoriesRef.current.find((category) => category.id === categoryId)
+    const levelPosition = currentCategory?.levels.length ?? 0
+
     setCategories((previous) =>
       previous.map((category) => {
         if (category.id !== categoryId) return category
@@ -425,6 +687,61 @@ function App() {
         }
       }),
     )
+
+    if (hasRemote()) {
+      void upsertRemoteLevel(categoryId, newLevel, levelPosition)
+    }
+  }
+
+  const handleUpdateQuestion = async (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    correctAnswerDisplay: string
+    acceptedAnswers: string[]
+  }) => {
+    const { categoryId, levelId, questionId, prompt, correctAnswerDisplay, acceptedAnswers } =
+      payload
+
+    const currentCategory = categoriesRef.current.find((category) => category.id === categoryId)
+    const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
+    const levelPosition = currentCategory?.levels.findIndex((level) => level.id === levelId) ?? -1
+
+    if (!currentCategory || !currentLevel) {
+      return
+    }
+
+    const nextLevel = {
+      ...currentLevel,
+      questions: currentLevel.questions.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              prompt,
+              correctAnswerDisplay,
+              acceptedAnswers,
+            }
+          : question,
+      ),
+    }
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== categoryId) {
+          return category
+        }
+
+        return {
+          ...category,
+          levels: category.levels.map((level) => (level.id === levelId ? nextLevel : level)),
+        }
+      }),
+    )
+
+    if (hasRemote()) {
+      await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    }
   }
 
   const handleGenerateShareLink = async (levelId: string) => {
@@ -437,9 +754,10 @@ function App() {
       return
     }
 
+    const quizId = `quiz-${crypto.randomUUID()}`
     const payload: ShareQuizPayload = {
       version: 1,
-      quizId: `quiz-${crypto.randomUUID()}`,
+      quizId,
       categoryId: selectedCategory.id,
       categoryTitle: selectedCategory.title,
       levelId: level.id,
@@ -451,10 +769,20 @@ function App() {
 
     const encoded = encodePayload(payload)
     const shareLink = `${window.location.origin}${window.location.pathname}?respond=${encoded}`
+    const key = levelKey(selectedCategory.id, level.id)
+    const rankingPreviewLink = `${window.location.origin}${window.location.pathname}?ranking=${encodeURIComponent(quizId)}`
 
     setShareLinks((previous) => ({
       ...previous,
-      [levelKey(selectedCategory.id, level.id)]: shareLink,
+      [key]: shareLink,
+    }))
+    setShareQuizIds((previous) => ({
+      ...previous,
+      [key]: quizId,
+    }))
+    setRankingPreviewLinks((previous) => ({
+      ...previous,
+      [key]: rankingPreviewLink,
     }))
 
     void copyText(shareLink)
@@ -468,6 +796,30 @@ function App() {
     if (!link) return
 
     await copyText(link)
+  }
+
+  const handleShareRankingPreview = async (levelId: string) => {
+    if (!selectedCategory) return
+
+    const key = levelKey(selectedCategory.id, levelId)
+    const existing = rankingPreviewLinks[key]
+    if (existing) {
+      await copyText(existing)
+      return
+    }
+
+    const quizId = shareQuizIds[key]
+    if (!quizId) {
+      return
+    }
+
+    const previewLink = `${window.location.origin}${window.location.pathname}?ranking=${encodeURIComponent(quizId)}`
+    setRankingPreviewLinks((previous) => ({
+      ...previous,
+      [key]: previewLink,
+    }))
+
+    await copyText(previewLink)
   }
 
   const handleShortenShareLink = async (levelId: string) => {
@@ -508,7 +860,7 @@ function App() {
     await copyText(link)
   }
 
-  const handleBuildSubmissionLink = (): string => {
+  const handleBuildSubmissionLink = async (): Promise<string> => {
     if (!sharedQuiz || !sharedResult) {
       return ''
     }
@@ -518,12 +870,25 @@ function App() {
       return ''
     }
 
+    let avatarValue = responderAvatarDataUrl
+
+    if (hasRemote() && responderAvatarFile) {
+      const extension = responderAvatarFile.name.includes('.')
+        ? responderAvatarFile.name.split('.')[responderAvatarFile.name.split('.').length - 1]
+        : 'jpg'
+      const avatarPath = `avatars/${safeName.replace(/\s+/g, '-').toLowerCase()}-${crypto.randomUUID()}.${extension}`
+      const remoteAvatarUrl = await uploadRemoteAsset(responderAvatarFile, avatarPath)
+      if (remoteAvatarUrl) {
+        avatarValue = remoteAvatarUrl
+      }
+    }
+
     const payload: ShareSubmissionPayload = {
       version: 1,
       submissionId: `submission-${crypto.randomUUID()}`,
       quizId: sharedQuiz.quizId,
       responderName: safeName,
-      responderAvatarDataUrl,
+      responderAvatarDataUrl: avatarValue,
       categoryTitle: sharedQuiz.categoryTitle,
       levelTitle: sharedQuiz.level.title,
       score: sharedResult.score,
@@ -539,6 +904,7 @@ function App() {
 
   const handleResponderAvatarUpload = async (file: File) => {
     const dataUrl = await fileToAvatarDataUrl(file)
+    setResponderAvatarFile(file)
     setResponderAvatarDataUrl(dataUrl)
   }
 
@@ -553,6 +919,9 @@ function App() {
 
   const finalPercent =
     categoryTotals.total > 0 ? Math.round((categoryTotals.score / categoryTotals.total) * 100) : 0
+  const rankingEntries = rankingPreviewQuizId
+    ? rankings.filter((entry) => entry.quizId === rankingPreviewQuizId)
+    : rankings
 
   const screenContent = (() => {
     if (
@@ -600,11 +969,13 @@ function App() {
             category={selectedCategory}
             records={records}
             shareLinks={shareLinks}
+            rankingPreviewLinks={rankingPreviewLinks}
             shortLinks={shortLinks}
             onBack={() => setScreen('categories')}
             onSelectLevel={(levelId) => openLevel(selectedCategory.id, levelId)}
             onShareLevel={handleGenerateShareLink}
             onCopyShareLink={handleCopyShareLink}
+            onShareRankingPreview={handleShareRankingPreview}
             onShortenShareLink={handleShortenShareLink}
           />
         )
@@ -692,7 +1063,8 @@ function App() {
       case 'ranking':
         return (
           <RankingScreen
-            entries={rankings}
+            entries={rankingEntries}
+            isPreviewMode={isRankingPreviewMode}
             onBack={() => setScreen('home')}
             onClear={() => setRankings([])}
           />
@@ -702,8 +1074,44 @@ function App() {
         return null
     }
   })()
+  const showSidePanels = !isResponderMode && !isRankingPreviewMode
+  const requiresAuth = hasRemote()
+  const canAccessMode =
+    !requiresAuth || (accessMode === 'admin' ? hasSession && isAdmin : hasSession)
 
-  const showSidePanels = !isResponderMode
+  const protectedContent = (() => {
+    if (!requiresAuth) {
+      return screenContent
+    }
+
+    if (authLoading) {
+      return (
+        <section className="mt-6 flex flex-1 items-center justify-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-white/75">
+            Carregando login...
+          </p>
+        </section>
+      )
+    }
+
+    if (!hasSession) {
+      return (
+        <AuthScreen
+          mode={accessMode}
+          onGoogleLogin={() => void handleSocialLogin('google')}
+          onAppleLogin={() => void handleSocialLogin('apple')}
+        />
+      )
+    }
+
+    if (accessMode === 'admin' && !isAdmin) {
+      return (
+        <AccessDeniedScreen email={session?.user.email} onSignOut={() => void handleSignOut()} />
+      )
+    }
+
+    return screenContent
+  })()
 
   return (
     <div
@@ -737,14 +1145,23 @@ function App() {
                 transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="min-h-0 flex-1 overflow-hidden"
               >
-                {screenContent}
+                {protectedContent}
               </motion.div>
             </AnimatePresence>
           </Frame>
         </div>
 
-        {showSidePanels && (
+        {showSidePanels && canAccessMode && (
           <div className="grid w-full max-w-md gap-4">
+            {hasRemote() && hasSession && (
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+              >
+                Sair ({session?.user.email})
+              </button>
+            )}
             <ConfigPanel
               title={config.title}
               subtitle={config.subtitle}
@@ -767,12 +1184,13 @@ function App() {
               categories={categories}
               onAddCategory={handleAddCategory}
               onAddLevel={handleAddLevel}
+              onUpdateQuestion={handleUpdateQuestion}
             />
           </div>
         )}
       </div>
 
-      {!isResponderMode && selectedLevel && (
+      {!isResponderMode && !isRankingPreviewMode && canAccessMode && selectedLevel && (
         <div className="pointer-events-none fixed -left-[99999px] top-0">
           <div ref={sheetRef}>
             <AnswerSheet

@@ -9,7 +9,7 @@ interface RespondResultScreenProps {
   responderAvatarDataUrl: string | null
   onResponderNameChange: (value: string) => void
   onResponderAvatarUpload: (file: File) => void
-  onBuildSubmissionLink: () => string
+  onBuildSubmissionLink: () => Promise<string>
 }
 
 export const RespondResultScreen = ({
@@ -86,9 +86,10 @@ export const RespondResultScreen = ({
 
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             if (!responderName.trim()) return
-            const link = onBuildSubmissionLink()
+            const link = await onBuildSubmissionLink()
+            if (!link) return
             setSubmissionLink(link)
             setCopied(false)
           }}

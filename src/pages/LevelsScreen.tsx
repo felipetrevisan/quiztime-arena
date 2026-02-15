@@ -5,11 +5,13 @@ interface LevelsScreenProps {
   category: Category
   records: Record<string, LevelRecord>
   shareLinks: Record<string, string>
+  rankingPreviewLinks: Record<string, string>
   shortLinks: Record<string, string>
   onBack: () => void
   onSelectLevel: (levelId: string) => void
   onShareLevel: (levelId: string) => void
   onCopyShareLink: (levelId: string) => void
+  onShareRankingPreview: (levelId: string) => void
   onShortenShareLink: (levelId: string) => void
 }
 
@@ -17,11 +19,13 @@ export const LevelsScreen = ({
   category,
   records,
   shareLinks,
+  rankingPreviewLinks,
   shortLinks,
   onBack,
   onSelectLevel,
   onShareLevel,
   onCopyShareLink,
+  onShareRankingPreview,
   onShortenShareLink,
 }: LevelsScreenProps) => {
   return (
@@ -58,6 +62,7 @@ export const LevelsScreen = ({
         {category.levels.map((level, index) => {
           const key = `${category.id}:${level.id}`
           const linkToShow = shortLinks[key] ?? shareLinks[key]
+          const rankingLink = rankingPreviewLinks[key]
           const record = records[key]
 
           return (
@@ -91,6 +96,16 @@ export const LevelsScreen = ({
                       </p>
                       <p className="mt-1 line-clamp-2 break-all text-[10px] text-cyan-100/80">
                         {linkToShow}
+                      </p>
+                    </>
+                  )}
+                  {rankingLink && (
+                    <>
+                      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-200">
+                        Preview ranking
+                      </p>
+                      <p className="mt-1 line-clamp-2 break-all text-[10px] text-emerald-100/80">
+                        {rankingLink}
                       </p>
                     </>
                   )}
@@ -137,6 +152,18 @@ export const LevelsScreen = ({
                       className="rounded-lg border border-fuchsia-200/40 bg-fuchsia-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-fuchsia-100"
                     >
                       Encurtar
+                    </button>
+                  )}
+                  {linkToShow && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onShareRankingPreview(level.id)
+                      }}
+                      className="rounded-lg border border-emerald-200/40 bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-100"
+                    >
+                      Copiar ranking
                     </button>
                   )}
                 </div>

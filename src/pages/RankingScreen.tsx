@@ -2,6 +2,7 @@ import type { RankingEntry } from '@/types/quiz'
 
 interface RankingScreenProps {
   entries: RankingEntry[]
+  isPreviewMode?: boolean
   onBack: () => void
   onClear: () => void
 }
@@ -20,7 +21,12 @@ const getInitials = (value: string): string => {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
 }
 
-export const RankingScreen = ({ entries, onBack, onClear }: RankingScreenProps) => {
+export const RankingScreen = ({
+  entries,
+  isPreviewMode = false,
+  onBack,
+  onClear,
+}: RankingScreenProps) => {
   const sorted = [...entries].sort((left, right) => {
     const leftPercent = left.total ? left.score / left.total : 0
     const rightPercent = right.total ? right.score / right.total : 0
@@ -40,15 +46,17 @@ export const RankingScreen = ({ entries, onBack, onClear }: RankingScreenProps) 
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold uppercase tracking-[0.16em] text-white">
-          Ranking
+          {isPreviewMode ? 'Ranking do quiz' : 'Ranking'}
         </h2>
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
-        >
-          Voltar
-        </button>
+        {!isPreviewMode && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+          >
+            Voltar
+          </button>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
@@ -99,13 +107,15 @@ export const RankingScreen = ({ entries, onBack, onClear }: RankingScreenProps) 
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onClear}
-        className="mt-3 rounded-xl border border-rose-300/35 bg-rose-500/20 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-100"
-      >
-        Limpar ranking
-      </button>
+      {!isPreviewMode && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-3 rounded-xl border border-rose-300/35 bg-rose-500/20 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-100"
+        >
+          Limpar ranking
+        </button>
+      )}
     </section>
   )
 }

@@ -1,15 +1,23 @@
 import type { Category, LevelMode } from '@/types/quiz'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface BuilderPanelProps {
   categories: Category[]
-  onAddCategory: (category: Category) => void
+  onAddCategory: (category: Category) => void | Promise<void>
   onAddLevel: (
     categoryId: string,
     levelTitle: string,
     levelDescription: string,
     mode: LevelMode,
-  ) => void
+  ) => void | Promise<void>
+  onUpdateQuestion: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    correctAnswerDisplay: string
+    acceptedAnswers: string[]
+  }) => void | Promise<void>
 }
 
 const slugify = (value: string): string =>
@@ -19,18 +27,110 @@ const slugify = (value: string): string =>
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
 
-export const BuilderPanel = ({ categories, onAddCategory, onAddLevel }: BuilderPanelProps) => {
+const parseAcceptedAnswers = (value: string): string[] =>
+  value
+    .split(/[\n,;]+/g)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+export const BuilderPanel = ({
+  categories,
+  onAddCategory,
+  onAddLevel,
+  onUpdateQuestion,
+}: BuilderPanelProps) => {
   const [categoryTitle, setCategoryTitle] = useState('')
   const [categoryDescription, setCategoryDescription] = useState('')
   const [levelTitle, setLevelTitle] = useState('')
   const [levelDescription, setLevelDescription] = useState('')
   const [levelMode, setLevelMode] = useState<LevelMode>('quiz')
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
+  const [questionCategoryId, setQuestionCategoryId] = useState(categories[0]?.id ?? '')
+  const [questionLevelId, setQuestionLevelId] = useState(categories[0]?.levels[0]?.id ?? '')
+  const [questionId, setQuestionId] = useState(categories[0]?.levels[0]?.questions[0]?.id ?? '')
+  const [questionPrompt, setQuestionPrompt] = useState('')
+  const [correctAnswerDisplay, setCorrectAnswerDisplay] = useState('')
+  const [acceptedAnswersInput, setAcceptedAnswersInput] = useState('')
 
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ id: category.id, label: category.title })),
     [categories],
   )
+
+  const levelOptions = useMemo(
+    () => categories.find((category) => category.id === questionCategoryId)?.levels ?? [],
+    [categories, questionCategoryId],
+  )
+
+  const questionOptions = useMemo(
+    () => levelOptions.find((level) => level.id === questionLevelId)?.questions ?? [],
+    [levelOptions, questionLevelId],
+  )
+
+  const selectedLevel = useMemo(
+    () => levelOptions.find((level) => level.id === questionLevelId) ?? null,
+    [levelOptions, questionLevelId],
+  )
+
+  const selectedQuestion = useMemo(
+    () => questionOptions.find((question) => question.id === questionId) ?? null,
+    [questionId, questionOptions],
+  )
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      setCategoryId('')
+      setQuestionCategoryId('')
+      setQuestionLevelId('')
+      setQuestionId('')
+      return
+    }
+
+    if (!categories.some((category) => category.id === categoryId)) {
+      setCategoryId(categories[0].id)
+    }
+
+    const nextQuestionCategoryId = categories.some((category) => category.id === questionCategoryId)
+      ? questionCategoryId
+      : categories[0].id
+
+    if (nextQuestionCategoryId !== questionCategoryId) {
+      setQuestionCategoryId(nextQuestionCategoryId)
+    }
+
+    const nextLevels =
+      categories.find((category) => category.id === nextQuestionCategoryId)?.levels ?? []
+    const nextQuestionLevelId = nextLevels.some((level) => level.id === questionLevelId)
+      ? questionLevelId
+      : (nextLevels[0]?.id ?? '')
+
+    if (nextQuestionLevelId !== questionLevelId) {
+      setQuestionLevelId(nextQuestionLevelId)
+    }
+
+    const nextQuestions =
+      nextLevels.find((level) => level.id === nextQuestionLevelId)?.questions ?? []
+    const nextQuestionId = nextQuestions.some((question) => question.id === questionId)
+      ? questionId
+      : (nextQuestions[0]?.id ?? '')
+
+    if (nextQuestionId !== questionId) {
+      setQuestionId(nextQuestionId)
+    }
+  }, [categories, categoryId, questionCategoryId, questionId, questionLevelId])
+
+  useEffect(() => {
+    if (!selectedQuestion) {
+      setQuestionPrompt('')
+      setCorrectAnswerDisplay('')
+      setAcceptedAnswersInput('')
+      return
+    }
+
+    setQuestionPrompt(selectedQuestion.prompt)
+    setCorrectAnswerDisplay(selectedQuestion.correctAnswerDisplay)
+    setAcceptedAnswersInput(selectedQuestion.acceptedAnswers.join(', '))
+  }, [selectedQuestion])
 
   return (
     <aside className="space-y-3 rounded-3xl border border-white/20 bg-black/35 p-4 text-white shadow-xl backdrop-blur-sm">
@@ -57,11 +157,11 @@ export const BuilderPanel = ({ categories, onAddCategory, onAddLevel }: BuilderP
         />
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             if (!categoryTitle.trim()) return
 
             const id = slugify(categoryTitle)
-            onAddCategory({
+            await onAddCategory({
               id,
               title: categoryTitle.trim(),
               subtitle: 'Personalizada',
@@ -119,9 +219,9 @@ export const BuilderPanel = ({ categories, onAddCategory, onAddLevel }: BuilderP
         </select>
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             if (!categoryId || !levelTitle.trim()) return
-            onAddLevel(
+            await onAddLevel(
               categoryId,
               levelTitle.trim(),
               levelDescription.trim() || 'Novo nivel criado no builder.',
@@ -133,6 +233,97 @@ export const BuilderPanel = ({ categories, onAddCategory, onAddLevel }: BuilderP
           className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
         >
           Adicionar nivel
+        </button>
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+          Gabarito automatico
+        </p>
+        <select
+          value={questionCategoryId}
+          onChange={(event) => setQuestionCategoryId(event.target.value)}
+          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        >
+          {categoryOptions.map((option) => (
+            <option key={option.id} value={option.id} className="bg-slate-900">
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={questionLevelId}
+          onChange={(event) => setQuestionLevelId(event.target.value)}
+          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        >
+          {levelOptions.map((level) => (
+            <option key={level.id} value={level.id} className="bg-slate-900">
+              {level.title}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={questionId}
+          onChange={(event) => setQuestionId(event.target.value)}
+          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        >
+          {questionOptions.map((question, index) => (
+            <option key={question.id} value={question.id} className="bg-slate-900">
+              {selectedLevel?.mode === 'blank'
+                ? `Alternativa ${index + 1}`
+                : `Pergunta ${index + 1}`}
+            </option>
+          ))}
+        </select>
+
+        <input
+          value={questionPrompt}
+          onChange={(event) => setQuestionPrompt(event.target.value)}
+          placeholder="Texto da pergunta (opcional no modo em branco)"
+          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        />
+        <input
+          value={correctAnswerDisplay}
+          onChange={(event) => setCorrectAnswerDisplay(event.target.value)}
+          placeholder="Resposta correta principal"
+          className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        />
+        <textarea
+          value={acceptedAnswersInput}
+          onChange={(event) => setAcceptedAnswersInput(event.target.value)}
+          placeholder="Sinonimos aceitos (separe por virgula, ponto e virgula ou quebra de linha)"
+          className="h-20 w-full resize-none rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+        />
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (!questionCategoryId || !questionLevelId || !questionId) return
+
+            const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
+            const correct = correctAnswerDisplay.trim()
+            const hasCorrectAlready = acceptedAnswers.some(
+              (item) => item.toLowerCase() === correct.toLowerCase(),
+            )
+
+            if (correct && !hasCorrectAlready) {
+              acceptedAnswers.unshift(correct)
+            }
+
+            await onUpdateQuestion({
+              categoryId: questionCategoryId,
+              levelId: questionLevelId,
+              questionId,
+              prompt: questionPrompt.trim(),
+              correctAnswerDisplay: correct,
+              acceptedAnswers,
+            })
+          }}
+          className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+        >
+          Salvar gabarito
         </button>
       </div>
     </aside>
