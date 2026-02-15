@@ -1,14 +1,25 @@
 import { useQuizApp } from '@/context/quiz-app-context'
 import { CategoriesScreen } from '@/pages/CategoriesScreen'
-import { createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute, useMatchRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/categories')({
   component: CategoriesRoute,
 })
 
 function CategoriesRoute() {
+  const matchRoute = useMatchRoute()
   const { categories, goHome, goLevels, setSelectedCategoryId, setSelectedLevelId, setSharedQuiz } =
     useQuizApp()
+  const isCategoriesIndex = Boolean(
+    matchRoute({
+      to: '/categories',
+      fuzzy: false,
+    }),
+  )
+
+  if (!isCategoriesIndex) {
+    return <Outlet />
+  }
 
   return (
     <CategoriesScreen
