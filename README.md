@@ -8,6 +8,7 @@ App de quiz em formato vertical (9:16), com categorias e niveis, animacoes, expo
 - TailwindCSS
 - Motion (`motion/react`)
 - html-to-image
+- vite-plugin-pwa
 - Biome (lint + format)
 - Bun
 
@@ -27,6 +28,22 @@ bun install
 ```bash
 bun run dev
 ```
+
+## PWA (instalavel e offline)
+
+O app esta configurado como PWA com:
+
+- `manifest.webmanifest` gerado automaticamente no build
+- service worker com `autoUpdate`
+- cache de assets locais (incluindo imagens de `public/assets`)
+- icones em `public/pwa`
+
+Para validar:
+
+1. Rode `bun run build`.
+2. Rode `bun run preview`.
+3. Abra no navegador e instale (`Adicionar a tela inicial` no mobile ou `Install` no desktop).
+4. Depois de abrir uma vez online, ele funciona offline com o conteudo cacheado.
 
 ## Supabase (persistencia + login social)
 

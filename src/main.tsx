@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register'
 import App from '@/App'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -14,3 +15,7 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 )
+
+registerSW({
+  immediate: true,
+})
