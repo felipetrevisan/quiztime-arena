@@ -7,12 +7,14 @@ export type Screen =
   | 'levelResult'
   | 'final'
   | 'ranking'
+  | 'myQuizzes'
   | 'respondResult'
 
 export type AccessMode = 'admin' | 'responder' | 'ranking'
 
 export type ThemeId = 'neon-purple' | 'candy-pink' | 'ice-blue' | 'soft-bw'
 export type LevelMode = 'quiz' | 'blank'
+export type TimingMode = 'timeless' | 'speedrun'
 
 export interface Question {
   id: string
@@ -27,6 +29,7 @@ export interface Level {
   title: string
   description: string
   mode?: LevelMode
+  timingMode?: TimingMode
   questions: Question[]
 }
 
@@ -58,6 +61,9 @@ export interface LevelRecord {
   levelId: string
   score: number
   total: number
+  points?: number
+  durationMs?: number
+  playMode?: TimingMode
   answers: Record<string, string>
   results: Record<string, boolean>
   completedAt: string
@@ -78,6 +84,9 @@ export interface LevelDraft {
 export interface ResponderResult {
   score: number
   total: number
+  points: number
+  durationMs: number
+  playMode: TimingMode
   attemptId: string
 }
 
@@ -97,12 +106,16 @@ export interface ShareSubmissionPayload {
   version: 1
   submissionId: string
   quizId: string
+  userId?: string | null
   responderName: string
   responderAvatarDataUrl: string | null
   categoryTitle: string
   levelTitle: string
   score: number
   total: number
+  points?: number
+  durationMs?: number
+  playMode?: TimingMode
   answers: Record<string, string>
   results: Record<string, boolean>
   submittedAt: string

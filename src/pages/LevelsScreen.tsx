@@ -91,6 +91,9 @@ export const LevelsScreen = ({
                         ? 'Sem perguntas (8 alternativas)'
                         : 'Quiz com perguntas'}
                     </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-100/80">
+                      {level.timingMode === 'speedrun' ? 'Modo Speed Run' : 'Modo Sem Tempo'}
+                    </p>
                     {linkToShow && (
                       <>
                         <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-cyan-200">

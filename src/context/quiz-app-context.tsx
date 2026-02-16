@@ -13,6 +13,7 @@ import type {
   ResponderResult,
   ShareQuizPayload,
   ThemeOption,
+  TimingMode,
 } from '@/types/quiz'
 
 export interface QuizAppContextValue {
@@ -63,6 +64,7 @@ export interface QuizAppContextValue {
   goBuilder: () => void
   goCategories: () => void
   goRanking: () => void
+  goMyQuizzes: () => void
   goLevels: (categoryId: string) => void
   openLevel: (categoryId: string, levelId: string) => void
   handleCorrect: () => void
@@ -77,6 +79,7 @@ export interface QuizAppContextValue {
     levelTitle: string,
     levelDescription: string,
     mode: LevelMode,
+    timingMode: TimingMode,
   ) => void
   handleUpdateQuestion: (payload: {
     categoryId: string

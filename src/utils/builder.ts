@@ -1,4 +1,4 @@
-import type { Level, LevelMode, Question } from '@/types/quiz'
+import type { Level, LevelMode, Question, TimingMode } from '@/types/quiz'
 
 const makeQuestion = (index: number, mode: LevelMode): Question => {
   if (mode === 'blank') {
@@ -24,10 +24,12 @@ export const createEmptyLevel = (
   title: string,
   description: string,
   mode: LevelMode = 'quiz',
+  timingMode: TimingMode = 'timeless',
 ): Level => ({
   id: `level-${crypto.randomUUID()}`,
   title,
   description,
   mode,
+  timingMode,
   questions: Array.from({ length: 8 }, (_, index) => makeQuestion(index, mode)),
 })

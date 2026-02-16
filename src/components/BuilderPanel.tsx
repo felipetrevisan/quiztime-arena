@@ -1,4 +1,4 @@
-import type { Category, LevelMode } from '@/types/quiz'
+import type { Category, LevelMode, TimingMode } from '@/types/quiz'
 import { useEffect, useMemo, useState } from 'react'
 
 export type BuilderPanelSection = 'category' | 'level' | 'answer'
@@ -12,6 +12,7 @@ interface BuilderPanelProps {
     levelTitle: string,
     levelDescription: string,
     mode: LevelMode,
+    timingMode: TimingMode,
   ) => void | Promise<void>
   onUpdateQuestion: (payload: {
     categoryId: string
@@ -48,6 +49,7 @@ export const BuilderPanel = ({
   const [levelTitle, setLevelTitle] = useState('')
   const [levelDescription, setLevelDescription] = useState('')
   const [levelMode, setLevelMode] = useState<LevelMode>('quiz')
+  const [timingMode, setTimingMode] = useState<TimingMode>('timeless')
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
   const [questionCategoryId, setQuestionCategoryId] = useState(categories[0]?.id ?? '')
   const [questionLevelId, setQuestionLevelId] = useState(categories[0]?.levels[0]?.id ?? '')
@@ -230,6 +232,19 @@ export const BuilderPanel = ({
               Quiz em branco (8 alternativas)
             </option>
           </select>
+          <select
+            value={timingMode}
+            onChange={(event) => setTimingMode(event.target.value as TimingMode)}
+            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+            aria-label="Modo de tempo"
+          >
+            <option value="timeless" className="bg-slate-900">
+              Sem tempo (Timeless)
+            </option>
+            <option value="speedrun" className="bg-slate-900">
+              Speed Run (pontua por rapidez)
+            </option>
+          </select>
           <button
             type="button"
             onClick={async () => {
@@ -239,6 +254,7 @@ export const BuilderPanel = ({
                 levelTitle.trim(),
                 levelDescription.trim() || 'Novo nivel criado no builder.',
                 levelMode,
+                timingMode,
               )
               setLevelTitle('')
               setLevelDescription('')

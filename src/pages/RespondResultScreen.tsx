@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import type { TimingMode } from '@/types/quiz'
+import { formatDuration } from '@/utils/scoring'
+
 type SubmitState = 'sending' | 'success' | 'error'
 
 interface RespondResultScreenProps {
   score: number
   total: number
+  points: number
+  durationMs: number
+  playMode: TimingMode
   levelTitle: string
   responderName: string
   onOpenRanking: () => void
@@ -14,6 +20,9 @@ interface RespondResultScreenProps {
 export const RespondResultScreen = ({
   score,
   total,
+  points,
+  durationMs,
+  playMode,
   levelTitle,
   responderName,
   onOpenRanking,
@@ -61,6 +70,11 @@ export const RespondResultScreen = ({
           </strong>{' '}
           ({percent}%)
         </p>
+        {playMode === 'speedrun' && (
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-amber-100/90">
+            Speed Run • {points} pts • {formatDuration(durationMs)}
+          </p>
+        )}
       </div>
 
       <div className="mt-4 rounded-2xl border border-white/20 bg-black/30 p-4 text-center">

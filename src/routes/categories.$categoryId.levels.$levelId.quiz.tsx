@@ -86,6 +86,7 @@ function QuizRoute() {
     <QuizScreen
       level={levelToRender}
       theme={activeTheme}
+      timingMode={levelToRender.timingMode ?? 'timeless'}
       isBlankMode={levelToRender.mode === 'blank'}
       isResponderMode={isResponderMode}
       responderName={responderName}

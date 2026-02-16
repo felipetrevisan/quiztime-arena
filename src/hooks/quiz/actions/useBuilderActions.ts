@@ -6,7 +6,7 @@ import {
   upsertRemoteCategory,
   upsertRemoteLevel,
 } from '@/services/supabase'
-import type { Category, Level, LevelMode } from '@/types/quiz'
+import type { Category, Level, LevelMode, TimingMode } from '@/types/quiz'
 import { createEmptyLevel } from '@/utils/builder'
 
 import { getUniqueCategoryId } from '../shared'
@@ -131,8 +131,9 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     levelTitle: string,
     levelDescription: string,
     mode: LevelMode,
+    timingMode: TimingMode,
   ) => {
-    const newLevel = createEmptyLevel(levelTitle, levelDescription, mode)
+    const newLevel = createEmptyLevel(levelTitle, levelDescription, mode, timingMode)
     const currentCategory = categories.find((category) => category.id === categoryId)
     const levelPosition = currentCategory?.levels.length ?? 0
 

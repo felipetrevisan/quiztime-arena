@@ -36,6 +36,7 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
   )
 
   const [selectedLevelId, setSelectedLevelId] = useState<string>('')
+  const [quizStartedAtMs, setQuizStartedAtMs] = useState<number>(Date.now())
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [results, setResults] = useState<Record<string, boolean>>({})
   const [corrected, setCorrected] = useState(false)
@@ -82,6 +83,8 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
     setSelectedCategoryId,
     selectedLevelId,
     setSelectedLevelId,
+    quizStartedAtMs,
+    setQuizStartedAtMs,
     answers,
     setAnswers,
     results,

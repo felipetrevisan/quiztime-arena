@@ -128,6 +128,10 @@ export const getScreenFromPath = (
     return { screen: 'ranking' }
   }
 
+  if (normalized === '/my-quizzes') {
+    return { screen: 'myQuizzes' }
+  }
+
   if (normalized === '/respond/result') {
     return { screen: 'respondResult' }
   }

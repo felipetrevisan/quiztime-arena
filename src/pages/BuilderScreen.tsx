@@ -1,6 +1,6 @@
 import { BuilderPanel, type BuilderPanelSection } from '@/components/BuilderPanel'
 import { ConfigPanel } from '@/components/ConfigPanel'
-import type { Category, LevelMode, ThemeId, ThemeOption } from '@/types/quiz'
+import type { Category, LevelMode, ThemeId, ThemeOption, TimingMode } from '@/types/quiz'
 import type { ChangeEvent } from 'react'
 import { useState } from 'react'
 
@@ -22,6 +22,7 @@ interface BuilderScreenProps {
     levelTitle: string,
     levelDescription: string,
     mode: LevelMode,
+    timingMode: TimingMode,
   ) => void | Promise<void>
   onUpdateQuestion: (payload: {
     categoryId: string

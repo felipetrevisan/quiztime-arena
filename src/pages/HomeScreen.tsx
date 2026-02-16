@@ -2,9 +2,17 @@ interface HomeScreenProps {
   onStart: () => void
   onOpenBuilder: () => void
   onOpenRanking: () => void
+  onOpenMyQuizzes: () => void
+  canOpenMyQuizzes: boolean
 }
 
-export const HomeScreen = ({ onStart, onOpenBuilder, onOpenRanking }: HomeScreenProps) => {
+export const HomeScreen = ({
+  onStart,
+  onOpenBuilder,
+  onOpenRanking,
+  onOpenMyQuizzes,
+  canOpenMyQuizzes,
+}: HomeScreenProps) => {
   return (
     <section className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
       <p className="mb-3 rounded-full border border-white/20 bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/80">
@@ -33,6 +41,15 @@ export const HomeScreen = ({ onStart, onOpenBuilder, onOpenRanking }: HomeScreen
         >
           Ver ranking
         </button>
+        {canOpenMyQuizzes && (
+          <button
+            type="button"
+            onClick={onOpenMyQuizzes}
+            className="rounded-2xl border border-emerald-200/45 bg-emerald-500/20 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-emerald-100"
+          >
+            Meus quizzes
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenBuilder}

@@ -23,6 +23,7 @@ interface UseQuizActionsParams {
   activeLevel: Level | null
   isResponderMode: boolean
   corrected: boolean
+  quizStartedAtMs: number
   answers: Record<string, string>
   results: Record<string, boolean>
   drafts: Record<string, LevelDraft>
@@ -35,6 +36,7 @@ interface UseQuizActionsParams {
   sharedQuiz: ShareQuizPayload | null
   sharedResult: ResponderResult | null
   config: AppConfig
+  currentUserId: string | null
   responderName: string
   responderAvatarDataUrl: string | null
   responderAvatarFile: File | null
@@ -44,6 +46,7 @@ interface UseQuizActionsParams {
   setDrafts: Dispatch<SetStateAction<Record<string, LevelDraft>>>
   setSelectedCategoryId: Dispatch<SetStateAction<string>>
   setSelectedLevelId: Dispatch<SetStateAction<string>>
+  setQuizStartedAtMs: Dispatch<SetStateAction<number>>
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>
   setResults: Dispatch<SetStateAction<Record<string, boolean>>>
   setCorrected: Dispatch<SetStateAction<boolean>>
@@ -75,6 +78,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     activeLevel: params.activeLevel,
     isResponderMode: params.isResponderMode,
     corrected: params.corrected,
+    quizStartedAtMs: params.quizStartedAtMs,
     answers: params.answers,
     results: params.results,
     drafts: params.drafts,
@@ -83,6 +87,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     setDrafts: params.setDrafts,
     setSelectedCategoryId: params.setSelectedCategoryId,
     setSelectedLevelId: params.setSelectedLevelId,
+    setQuizStartedAtMs: params.setQuizStartedAtMs,
     setAnswers: params.setAnswers,
     setResults: params.setResults,
     setCorrected: params.setCorrected,
@@ -119,6 +124,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     sharedQuiz: params.sharedQuiz,
     sharedResult: params.sharedResult,
     config: params.config,
+    currentUserId: params.currentUserId,
     responderName: params.responderName,
     responderAvatarDataUrl: params.responderAvatarDataUrl,
     responderAvatarFile: params.responderAvatarFile,

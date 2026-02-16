@@ -1,12 +1,15 @@
 import { ProgressBar } from '@/components/ProgressBar'
 import { QuestionRow } from '@/components/QuestionRow'
-import type { Level, ThemeOption } from '@/types/quiz'
+import type { Level, ThemeOption, TimingMode } from '@/types/quiz'
 import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+import { formatDuration } from '@/utils/scoring'
 
 interface QuizScreenProps {
   level: Level
   theme: ThemeOption
+  timingMode?: TimingMode
   isBlankMode?: boolean
   isResponderMode?: boolean
   responderName?: string
@@ -28,6 +31,7 @@ interface QuizScreenProps {
 export const QuizScreen = ({
   level,
   theme,
+  timingMode = 'timeless',
   isBlankMode = false,
   isResponderMode = false,
   responderName = '',
@@ -46,12 +50,33 @@ export const QuizScreen = ({
   onTakeScreenshot,
 }: QuizScreenProps) => {
   const [isCapturing, setIsCapturing] = useState(false)
+  const [elapsedMs, setElapsedMs] = useState(0)
   const total = level.questions.length
   const answeredCount = level.questions.filter((question) =>
     Boolean(answers[question.id]?.trim()),
   ).length
   const progress = corrected ? 100 : (answeredCount / total) * 100
   const currentQuestion = Math.min(answeredCount + 1, total)
+  const isSpeedrun = timingMode === 'speedrun'
+
+  useEffect(() => {
+    setElapsedMs(0)
+  }, [])
+
+  useEffect(() => {
+    if (!isSpeedrun || corrected) {
+      return
+    }
+
+    const startedAt = Date.now()
+    const timer = window.setInterval(() => {
+      setElapsedMs(Date.now() - startedAt)
+    }, 250)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [corrected, isSpeedrun])
 
   const handleTakeScreenshot = async () => {
     if (!onTakeScreenshot || isCapturing) {
@@ -76,6 +101,9 @@ export const QuizScreen = ({
           <h2 className="font-display text-base font-bold uppercase tracking-[0.16em] text-white">
             {isBlankMode ? 'Alternativa' : 'Pergunta'} {currentQuestion}/{total}
           </h2>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-amber-100/85">
+            {isSpeedrun ? `Speed Run • ${formatDuration(elapsedMs)}` : 'Timeless'}
+          </p>
         </div>
         {!isResponderMode && (
           <button

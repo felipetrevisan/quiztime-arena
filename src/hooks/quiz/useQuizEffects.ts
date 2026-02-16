@@ -16,6 +16,7 @@ import type {
   RankingEntry,
   ShareQuizPayload,
   ShareSubmissionPayload,
+  TimingMode,
 } from '@/types/quiz'
 import { decodePayload } from '@/utils/share'
 
@@ -177,6 +178,7 @@ export const useAccessAndSharedQuery = (params: {
   setRankingPreviewQuizId: Dispatch<SetStateAction<string | null>>
   setSelectedCategoryId: Dispatch<SetStateAction<string>>
   setSelectedLevelId: Dispatch<SetStateAction<string>>
+  setQuizStartedAtMs: Dispatch<SetStateAction<number>>
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>
   setResults: Dispatch<SetStateAction<Record<string, boolean>>>
   setCorrected: Dispatch<SetStateAction<boolean>>
@@ -198,6 +200,7 @@ export const useAccessAndSharedQuery = (params: {
     setRankingPreviewQuizId,
     setSelectedCategoryId,
     setSelectedLevelId,
+    setQuizStartedAtMs,
     setAnswers,
     setResults,
     setCorrected,
@@ -214,9 +217,12 @@ export const useAccessAndSharedQuery = (params: {
     const respondParam = query.get('respond')
     const rankingParam = query.get('ranking')
 
+    const isPublicRankingPath =
+      location.pathname === '/ranking' || location.pathname === '/my-quizzes'
+
     if (respondParam) {
       setAccessMode('responder')
-    } else if (rankingParam) {
+    } else if (rankingParam || isPublicRankingPath) {
       setAccessMode('ranking')
     } else {
       setAccessMode('admin')
@@ -230,14 +236,22 @@ export const useAccessAndSharedQuery = (params: {
       const submission = decodePayload<ShareSubmissionPayload>(importParam)
 
       if (submission?.version === 1) {
+        const normalizedSubmission: RankingEntry = {
+          ...submission,
+          userId: submission.userId ?? null,
+          playMode: (submission.playMode as TimingMode | undefined) ?? 'timeless',
+          points: submission.points ?? submission.score,
+          durationMs: submission.durationMs ?? 0,
+        }
+
         setRankings((previous) => {
-          if (previous.some((entry) => entry.submissionId === submission.submissionId)) {
+          if (previous.some((entry) => entry.submissionId === normalizedSubmission.submissionId)) {
             return previous
           }
-          return [submission, ...previous]
+          return [normalizedSubmission, ...previous]
         })
 
-        void saveRemoteRanking(submission)
+        void saveRemoteRanking(normalizedSubmission)
         if (screen !== 'ranking') {
           goRanking()
         }
@@ -252,9 +266,16 @@ export const useAccessAndSharedQuery = (params: {
     if (respondParam) {
       const payload = decodePayload<ShareQuizPayload>(respondParam)
       if (payload?.version === 1) {
-        setSharedQuiz(payload)
+        setSharedQuiz({
+          ...payload,
+          level: {
+            ...payload.level,
+            timingMode: payload.level.timingMode ?? 'timeless',
+          },
+        })
         setSelectedCategoryId(payload.categoryId)
         setSelectedLevelId(payload.levelId)
+        setQuizStartedAtMs(Date.now())
         setAnswers({})
         setResults({})
         setCorrected(false)
@@ -295,6 +316,7 @@ export const useAccessAndSharedQuery = (params: {
     setResults,
     setSelectedCategoryId,
     setSelectedLevelId,
+    setQuizStartedAtMs,
     setSharedQuiz,
   ])
 }

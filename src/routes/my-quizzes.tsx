@@ -1,24 +1,24 @@
 import { useQuizApp } from '@/context/quiz-app-context'
-import { RankingScreen } from '@/pages/RankingScreen'
+import { MyQuizzesScreen } from '@/pages/MyQuizzesScreen'
 import { getSessionAliases } from '@/utils/user'
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/ranking')({
-  component: RankingRoute,
+export const Route = createFileRoute('/my-quizzes')({
+  component: MyQuizzesRoute,
 })
 
-function RankingRoute() {
-  const { goHome, isRankingPreviewMode, rankingEntries, session, setRankings } = useQuizApp()
+function MyQuizzesRoute() {
+  const { categories, goHome, goRanking, rankingEntries, session } = useQuizApp()
   const aliases = getSessionAliases(session)
 
   return (
-    <RankingScreen
+    <MyQuizzesScreen
+      categories={categories}
       entries={rankingEntries}
-      isPreviewMode={isRankingPreviewMode}
       currentUserId={session?.user.id ?? null}
       currentUserAliases={aliases}
       onBack={goHome}
-      onClear={() => setRankings([])}
+      onOpenRanking={goRanking}
     />
   )
 }

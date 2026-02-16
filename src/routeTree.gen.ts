@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RankingRouteImport } from './routes/ranking'
+import { Route as MyQuizzesRouteImport } from './routes/my-quizzes'
 import { Route as FinalRouteImport } from './routes/final'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BuilderRouteImport } from './routes/builder'
@@ -22,6 +23,11 @@ import { Route as CategoriesCategoryIdLevelsLevelIdQuizRouteImport } from './rou
 const RankingRoute = RankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyQuizzesRoute = MyQuizzesRouteImport.update({
+  id: '/my-quizzes',
+  path: '/my-quizzes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinalRoute = FinalRouteImport.update({
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
+  '/my-quizzes': typeof MyQuizzesRoute
   '/ranking': typeof RankingRoute
   '/respond/result': typeof RespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
+  '/my-quizzes': typeof MyQuizzesRoute
   '/ranking': typeof RankingRoute
   '/respond/result': typeof RespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
+  '/my-quizzes': typeof MyQuizzesRoute
   '/ranking': typeof RankingRoute
   '/respond/result': typeof RespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/builder'
     | '/categories'
     | '/final'
+    | '/my-quizzes'
     | '/ranking'
     | '/respond/result'
     | '/categories/$categoryId/levels'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/builder'
     | '/categories'
     | '/final'
+    | '/my-quizzes'
     | '/ranking'
     | '/respond/result'
     | '/categories/$categoryId/levels'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/builder'
     | '/categories'
     | '/final'
+    | '/my-quizzes'
     | '/ranking'
     | '/respond/result'
     | '/categories/$categoryId/levels'
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   BuilderRoute: typeof BuilderRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   FinalRoute: typeof FinalRoute
+  MyQuizzesRoute: typeof MyQuizzesRoute
   RankingRoute: typeof RankingRoute
   RespondResultRoute: typeof RespondResultRoute
 }
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/ranking'
       fullPath: '/ranking'
       preLoaderRoute: typeof RankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-quizzes': {
+      id: '/my-quizzes'
+      path: '/my-quizzes'
+      fullPath: '/my-quizzes'
+      preLoaderRoute: typeof MyQuizzesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/final': {
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuilderRoute: BuilderRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   FinalRoute: FinalRoute,
+  MyQuizzesRoute: MyQuizzesRoute,
   RankingRoute: RankingRoute,
   RespondResultRoute: RespondResultRoute,
 }

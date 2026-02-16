@@ -7,8 +7,10 @@ import type {
   LevelRecord,
   ResponderResult,
   ShareQuizPayload,
+  TimingMode,
 } from '@/types/quiz'
 import { isAnswerCorrect } from '@/utils/normalize'
+import { calculateSpeedrunPoints } from '@/utils/scoring'
 
 import { levelKey, removeCategoryKeys } from '../shared'
 import { revokeBlobUrls } from './shared'
@@ -21,6 +23,7 @@ interface UseGameplayActionsParams {
   activeLevel: Level | null
   isResponderMode: boolean
   corrected: boolean
+  quizStartedAtMs: number
   answers: Record<string, string>
   results: Record<string, boolean>
   drafts: Record<string, LevelDraft>
@@ -29,6 +32,7 @@ interface UseGameplayActionsParams {
   setDrafts: Dispatch<SetStateAction<Record<string, LevelDraft>>>
   setSelectedCategoryId: Dispatch<SetStateAction<string>>
   setSelectedLevelId: Dispatch<SetStateAction<string>>
+  setQuizStartedAtMs: Dispatch<SetStateAction<number>>
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>
   setResults: Dispatch<SetStateAction<Record<string, boolean>>>
   setCorrected: Dispatch<SetStateAction<boolean>>
@@ -54,6 +58,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     activeLevel,
     isResponderMode,
     corrected,
+    quizStartedAtMs,
     answers,
     results,
     drafts,
@@ -62,6 +67,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     setDrafts,
     setSelectedCategoryId,
     setSelectedLevelId,
+    setQuizStartedAtMs,
     setAnswers,
     setResults,
     setCorrected,
@@ -88,6 +94,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     setResponderName('')
     setResponderAvatarDataUrl(null)
     setResponderAvatarFile(null)
+    setQuizStartedAtMs(Date.now())
   }
 
   const openLevel = (categoryId: string, levelId: string) => {
@@ -103,6 +110,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
 
     setSelectedCategoryId(categoryId)
     setSelectedLevelId(levelId)
+    setQuizStartedAtMs(Date.now())
 
     const draft = drafts[levelKey(categoryId, levelId)]
     if (draft) {
@@ -153,11 +161,20 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
       (accumulator, question) => accumulator + (results[question.id] ? 1 : 0),
       0,
     )
+    const playMode: TimingMode = activeLevel.timingMode ?? 'timeless'
+    const durationMs = playMode === 'speedrun' ? Math.max(1000, Date.now() - quizStartedAtMs) : 0
+    const points =
+      playMode === 'speedrun'
+        ? calculateSpeedrunPoints(score, activeLevel.questions.length, durationMs)
+        : score
 
     if (isResponderMode) {
       setSharedResult({
         score,
         total: activeLevel.questions.length,
+        points,
+        durationMs,
+        playMode,
         attemptId: `submission-${crypto.randomUUID()}`,
       })
       goRespondResult()
@@ -174,6 +191,9 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
       levelId: selectedLevel.id,
       score,
       total: selectedLevel.questions.length,
+      points,
+      durationMs,
+      playMode,
       answers,
       results,
       completedAt: new Date().toISOString(),

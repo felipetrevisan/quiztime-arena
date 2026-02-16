@@ -22,6 +22,9 @@ function RespondResultRoute() {
     <RespondResultScreen
       score={sharedResult.score}
       total={sharedResult.total}
+      points={sharedResult.points}
+      durationMs={sharedResult.durationMs}
+      playMode={sharedResult.playMode}
       levelTitle={sharedQuiz.level.title}
       responderName={responderName}
       onSubmitResult={submitResult}

@@ -18,6 +18,7 @@ create table if not exists public.levels (
   title text not null,
   description text not null,
   mode text not null default 'quiz' check (mode in ('quiz', 'blank')),
+  timing_mode text not null default 'timeless' check (timing_mode in ('timeless', 'speedrun')),
   position integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -38,17 +39,38 @@ create table if not exists public.questions (
 create table if not exists public.rankings (
   submission_id text primary key,
   quiz_id text not null,
+  user_id uuid references auth.users(id) on delete set null,
   responder_name text not null,
   responder_avatar_data_url text,
   category_title text not null,
   level_title text not null,
   score integer not null,
   total integer not null,
+  points integer not null default 0,
+  duration_ms integer not null default 0,
+  play_mode text not null default 'timeless' check (play_mode in ('timeless', 'speedrun')),
   answers jsonb not null,
   results jsonb not null,
   submitted_at timestamptz not null,
   created_at timestamptz not null default now()
 );
+
+alter table public.levels
+  add column if not exists timing_mode text not null default 'timeless';
+
+alter table public.rankings
+  add column if not exists points integer not null default 0;
+
+alter table public.rankings
+  add column if not exists duration_ms integer not null default 0;
+
+alter table public.rankings
+  add column if not exists play_mode text not null default 'timeless';
+
+alter table public.rankings
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
+
+create index if not exists rankings_user_id_idx on public.rankings(user_id);
 
 create table if not exists public.admin_users (
   email text primary key,
@@ -141,7 +163,7 @@ for select using (public.is_authenticated());
 drop policy if exists "admin write rankings" on public.rankings;
 drop policy if exists "public write rankings" on public.rankings;
 create policy "authenticated insert rankings" on public.rankings
-for insert with check (public.is_authenticated());
+for insert with check (public.is_authenticated() and (user_id is null or user_id = auth.uid()));
 drop policy if exists "admin update rankings" on public.rankings;
 create policy "admin update rankings" on public.rankings
 for update using (public.is_admin()) with check (public.is_admin());

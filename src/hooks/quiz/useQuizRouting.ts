@@ -12,6 +12,7 @@ const appRoutes = {
   levelResult: '/categories/$categoryId/levels/$levelId/result',
   final: '/final',
   ranking: '/ranking',
+  myQuizzes: '/my-quizzes',
   respondResult: '/respond/result',
 } as const
 
@@ -78,6 +79,10 @@ export const useQuizRouting = () => {
     void navigate({ to: appRoutes.ranking })
   }, [navigate])
 
+  const goMyQuizzes = useCallback(() => {
+    void navigate({ to: appRoutes.myQuizzes })
+  }, [navigate])
+
   const goRespondResult = useCallback(() => {
     void navigate({ to: appRoutes.respondResult })
   }, [navigate])
@@ -95,6 +100,7 @@ export const useQuizRouting = () => {
     goLevelResult,
     goFinal,
     goRanking,
+    goMyQuizzes,
     goRespondResult,
   }
 }

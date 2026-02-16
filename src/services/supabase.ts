@@ -16,6 +16,7 @@ interface LevelRow {
   title: string
   description: string
   mode: 'quiz' | 'blank' | null
+  timing_mode: 'timeless' | 'speedrun' | null
   position: number
   questions: QuestionRow[] | null
 }
@@ -32,12 +33,16 @@ interface QuestionRow {
 interface RankingRow {
   submission_id: string
   quiz_id: string
+  user_id: string | null
   responder_name: string
   responder_avatar_data_url: string | null
   category_title: string
   level_title: string
   score: number
   total: number
+  points: number | null
+  duration_ms: number | null
+  play_mode: 'timeless' | 'speedrun' | null
   answers: Record<string, string>
   results: Record<string, boolean>
   submitted_at: string
@@ -56,6 +61,7 @@ const toLevel = (row: LevelRow): Level => ({
   title: row.title,
   description: row.description,
   mode: row.mode ?? 'quiz',
+  timingMode: row.timing_mode ?? 'timeless',
   questions: (row.questions ?? [])
     .slice()
     .sort((left, right) => left.position - right.position)
@@ -78,12 +84,16 @@ const toRankingEntry = (row: RankingRow): RankingEntry => ({
   version: 1,
   submissionId: row.submission_id,
   quizId: row.quiz_id,
+  userId: row.user_id,
   responderName: row.responder_name,
   responderAvatarDataUrl: row.responder_avatar_data_url,
   categoryTitle: row.category_title,
   levelTitle: row.level_title,
   score: row.score,
   total: row.total,
+  points: row.points ?? row.score,
+  durationMs: row.duration_ms ?? 0,
+  playMode: row.play_mode ?? 'timeless',
   answers: row.answers,
   results: row.results,
   submittedAt: row.submitted_at,
@@ -97,7 +107,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,position))',
     )
     .order('position', { ascending: true })
 
@@ -147,6 +157,7 @@ const upsertLevel = async (categoryId: string, level: Level, position: number): 
       title: level.title,
       description: level.description,
       mode: level.mode ?? 'quiz',
+      timing_mode: level.timingMode ?? 'timeless',
       position,
     },
     {
@@ -227,7 +238,7 @@ export const fetchRemoteRankings = async (): Promise<RankingEntry[] | null> => {
   const { data, error } = await supabase
     .from('rankings')
     .select(
-      'submission_id,quiz_id,responder_name,responder_avatar_data_url,category_title,level_title,score,total,answers,results,submitted_at',
+      'submission_id,quiz_id,user_id,responder_name,responder_avatar_data_url,category_title,level_title,score,total,points,duration_ms,play_mode,answers,results,submitted_at',
     )
     .order('submitted_at', { ascending: false })
 
@@ -247,12 +258,16 @@ export const saveRemoteRanking = async (entry: RankingEntry): Promise<boolean> =
     {
       submission_id: entry.submissionId,
       quiz_id: entry.quizId,
+      user_id: entry.userId ?? null,
       responder_name: entry.responderName,
       responder_avatar_data_url: entry.responderAvatarDataUrl,
       category_title: entry.categoryTitle,
       level_title: entry.levelTitle,
       score: entry.score,
       total: entry.total,
+      points: entry.points ?? entry.score,
+      duration_ms: entry.durationMs ?? 0,
+      play_mode: entry.playMode ?? 'timeless',
       answers: entry.answers,
       results: entry.results,
       submitted_at: entry.submittedAt,

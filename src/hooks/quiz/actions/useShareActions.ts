@@ -26,6 +26,7 @@ interface UseShareActionsParams {
   sharedQuiz: ShareQuizPayload | null
   sharedResult: ResponderResult | null
   config: AppConfig
+  currentUserId: string | null
   responderName: string
   responderAvatarDataUrl: string | null
   responderAvatarFile: File | null
@@ -52,6 +53,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     sharedQuiz,
     sharedResult,
     config,
+    currentUserId,
     responderName,
     responderAvatarDataUrl,
     responderAvatarFile,
@@ -226,12 +228,16 @@ export const useShareActions = (params: UseShareActionsParams) => {
       version: 1,
       submissionId: sharedResult.attemptId,
       quizId: sharedQuiz.quizId,
+      userId: currentUserId,
       responderName: safeName,
       responderAvatarDataUrl: avatarValue,
       categoryTitle: sharedQuiz.categoryTitle,
       levelTitle: sharedQuiz.level.title,
       score: sharedResult.score,
       total: sharedResult.total,
+      points: sharedResult.points,
+      durationMs: sharedResult.durationMs,
+      playMode: sharedResult.playMode,
       answers,
       results,
       submittedAt: new Date().toISOString(),
@@ -262,12 +268,16 @@ export const useShareActions = (params: UseShareActionsParams) => {
       version: 1,
       submissionId: sharedResult.attemptId,
       quizId: sharedQuiz.quizId,
+      userId: currentUserId,
       responderName: safeName,
       responderAvatarDataUrl: avatarValue,
       categoryTitle: sharedQuiz.categoryTitle,
       levelTitle: sharedQuiz.level.title,
       score: sharedResult.score,
       total: sharedResult.total,
+      points: sharedResult.points,
+      durationMs: sharedResult.durationMs,
+      playMode: sharedResult.playMode,
       answers,
       results,
       submittedAt: new Date().toISOString(),
