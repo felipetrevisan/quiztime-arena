@@ -8,7 +8,8 @@ export const Route = createFileRoute('/respond/result')({
 })
 
 function RespondResultRoute() {
-  const { handleSubmitResponderResult, responderName, sharedQuiz, sharedResult } = useQuizApp()
+  const { goHome, goPlay, handleSubmitResponderResult, responderName, sharedQuiz, sharedResult } =
+    useQuizApp()
 
   const submitResult = useCallback(async () => {
     return handleSubmitResponderResult()
@@ -29,8 +30,12 @@ function RespondResultRoute() {
       responderName={responderName}
       onSubmitResult={submitResult}
       onOpenRanking={() => {
-        window.location.assign(`/ranking?ranking=${encodeURIComponent(sharedQuiz.quizId)}`)
+        void handleSubmitResponderResult().finally(() => {
+          window.location.assign(`/ranking?ranking=${encodeURIComponent(sharedQuiz.quizId)}`)
+        })
       }}
+      onOpenPlay={goPlay}
+      onOpenHome={goHome}
     />
   )
 }

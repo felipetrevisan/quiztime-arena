@@ -3,16 +3,15 @@ import { Frame } from '@/components/Frame'
 import { Header } from '@/components/Header'
 import { QuizAppProvider } from '@/context/quiz-app-context'
 import { screenVariants, useQuizAppController } from '@/hooks/useQuizAppController'
-import { AccessDeniedScreen } from '@/pages/AccessDeniedScreen'
 import { AuthScreen } from '@/pages/AuthScreen'
 import { Outlet } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
+import { useEffect } from 'react'
 
 function App() {
   const {
     contextValue,
     routeKey,
-    centerMainContent,
     canAccessMode,
     requiresAuth,
     authLoading,
@@ -37,6 +36,42 @@ function App() {
     showSignOutButton,
   } = useQuizAppController()
 
+  const isPublishedLevelFlow =
+    (contextValue.screen === 'quiz' ||
+      contextValue.screen === 'levelResult' ||
+      contextValue.screen === 'final') &&
+    Boolean(contextValue.sharedQuiz || contextValue.selectedLevel?.isPublished)
+
+  const isRestrictedForNonAdmin =
+    contextValue.screen !== 'home' &&
+    contextValue.screen !== 'play' &&
+    contextValue.screen !== 'ranking' &&
+    contextValue.screen !== 'myQuizzes' &&
+    contextValue.screen !== 'respondResult' &&
+    !isPublishedLevelFlow
+
+  const shouldRedirectNonAdmin =
+    requiresAuth && hasSession && accessMode === 'admin' && !isAdmin && isRestrictedForNonAdmin
+
+  useEffect(() => {
+    if (!shouldRedirectNonAdmin) {
+      return
+    }
+
+    if (
+      contextValue.screen === 'builder' ||
+      contextValue.screen === 'categories' ||
+      contextValue.screen === 'levels' ||
+      contextValue.screen === 'levelResult' ||
+      contextValue.screen === 'final'
+    ) {
+      contextValue.goPlay()
+      return
+    }
+
+    contextValue.goHome()
+  }, [contextValue.goHome, contextValue.goPlay, contextValue.screen, shouldRedirectNonAdmin])
+
   const protectedContent = (() => {
     if (!requiresAuth) {
       return <Outlet />
@@ -56,23 +91,13 @@ function App() {
       return <AuthScreen mode={accessMode} onGoogleLogin={() => void handleGoogleLogin()} />
     }
 
-    const isPublishedLevelFlow =
-      (contextValue.screen === 'quiz' ||
-        contextValue.screen === 'levelResult' ||
-        contextValue.screen === 'final') &&
-      Boolean(contextValue.sharedQuiz || contextValue.selectedLevel?.isPublished)
-
-    const isRestrictedForNonAdmin =
-      contextValue.screen !== 'home' &&
-      contextValue.screen !== 'play' &&
-      contextValue.screen !== 'ranking' &&
-      contextValue.screen !== 'myQuizzes' &&
-      contextValue.screen !== 'respondResult' &&
-      !isPublishedLevelFlow
-
-    if (accessMode === 'admin' && !isAdmin && isRestrictedForNonAdmin) {
+    if (shouldRedirectNonAdmin) {
       return (
-        <AccessDeniedScreen email={session?.user.email} onSignOut={() => void handleSignOut()} />
+        <section className="mt-6 flex flex-1 items-center justify-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-white/75">
+            Redirecionando para quizzes publicados...
+          </p>
+        </section>
       )
     }
 
@@ -81,11 +106,7 @@ function App() {
 
   return (
     <QuizAppProvider value={contextValue}>
-      <div
-        className={`min-h-screen bg-[#080915] px-3 py-4 sm:px-6 ${
-          centerMainContent ? 'flex items-center justify-center' : ''
-        }`}
-      >
+      <div className="flex min-h-screen items-center justify-center bg-[#080915] px-3 py-4 sm:px-6">
         <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
           {showSignOutButton && (
             <button

@@ -291,13 +291,6 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return true
     }
 
-    if (remoteEnabled) {
-      const saved = await saveRemoteRanking(entry)
-      if (!saved) {
-        return false
-      }
-    }
-
     setRankings((previous) => {
       if (previous.some((item) => item.submissionId === entry.submissionId)) {
         return previous
@@ -305,7 +298,12 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return [entry, ...previous]
     })
 
-    return true
+    if (!remoteEnabled) {
+      return true
+    }
+
+    const saved = await saveRemoteRanking(entry)
+    return saved
   }
 
   const handleResponderAvatarUpload = async (file: File) => {

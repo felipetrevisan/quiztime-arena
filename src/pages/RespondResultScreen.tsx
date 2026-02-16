@@ -14,6 +14,8 @@ interface RespondResultScreenProps {
   levelTitle: string
   responderName: string
   onOpenRanking: () => void
+  onOpenPlay: () => void
+  onOpenHome: () => void
   onSubmitResult: () => Promise<boolean>
 }
 
@@ -26,6 +28,8 @@ export const RespondResultScreen = ({
   levelTitle,
   responderName,
   onOpenRanking,
+  onOpenPlay,
+  onOpenHome,
   onSubmitResult,
 }: RespondResultScreenProps) => {
   const [submitState, setSubmitState] = useState<SubmitState>('sending')
@@ -96,7 +100,7 @@ export const RespondResultScreen = ({
         )}
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={() => {
@@ -104,7 +108,7 @@ export const RespondResultScreen = ({
               setSubmitState(ok ? 'success' : 'error')
             })
           }}
-          className="flex-1 rounded-xl border border-white/30 bg-black/35 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white"
+          className="rounded-xl border border-white/30 bg-black/35 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white"
         >
           Reenviar
         </button>
@@ -112,11 +116,27 @@ export const RespondResultScreen = ({
         <button
           type="button"
           onClick={onOpenRanking}
-          className="flex-1 rounded-xl border border-emerald-300/35 bg-emerald-500/20 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-100"
+          className="rounded-xl border border-emerald-300/35 bg-emerald-500/20 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-100"
         >
           Ver ranking
         </button>
+
+        <button
+          type="button"
+          onClick={onOpenPlay}
+          className="rounded-xl border border-cyan-300/35 bg-cyan-500/20 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-cyan-100"
+        >
+          Jogar outro quiz
+        </button>
       </div>
+
+      <button
+        type="button"
+        onClick={onOpenHome}
+        className="mt-2 rounded-xl border border-white/25 bg-black/25 px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+      >
+        Voltar para home
+      </button>
     </section>
   )
 }
