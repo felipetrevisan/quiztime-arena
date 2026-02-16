@@ -56,7 +56,13 @@ function App() {
       return <AuthScreen mode={accessMode} onGoogleLogin={() => void handleGoogleLogin()} />
     }
 
-    if (accessMode === 'admin' && !isAdmin) {
+    const isRestrictedForNonAdmin =
+      contextValue.screen !== 'home' &&
+      contextValue.screen !== 'ranking' &&
+      contextValue.screen !== 'myQuizzes' &&
+      contextValue.screen !== 'respondResult'
+
+    if (accessMode === 'admin' && !isAdmin && isRestrictedForNonAdmin) {
       return (
         <AccessDeniedScreen email={session?.user.email} onSignOut={() => void handleSignOut()} />
       )

@@ -217,12 +217,14 @@ export const useAccessAndSharedQuery = (params: {
     const respondParam = query.get('respond')
     const rankingParam = query.get('ranking')
 
-    const isPublicRankingPath =
-      location.pathname === '/ranking' || location.pathname === '/my-quizzes'
+    const isPublicUserPath =
+      location.pathname === '/' ||
+      location.pathname === '/ranking' ||
+      location.pathname === '/my-quizzes'
 
     if (respondParam) {
       setAccessMode('responder')
-    } else if (rankingParam || isPublicRankingPath) {
+    } else if (rankingParam || isPublicUserPath) {
       setAccessMode('ranking')
     } else {
       setAccessMode('admin')

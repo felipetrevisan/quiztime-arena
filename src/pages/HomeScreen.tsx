@@ -1,4 +1,5 @@
 interface HomeScreenProps {
+  isAdmin: boolean
   onStart: () => void
   onOpenBuilder: () => void
   onOpenRanking: () => void
@@ -7,6 +8,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen = ({
+  isAdmin,
   onStart,
   onOpenBuilder,
   onOpenRanking,
@@ -27,13 +29,15 @@ export const HomeScreen = ({
       </p>
 
       <div className="mt-8 grid w-full max-w-xs gap-2">
-        <button
-          type="button"
-          onClick={onStart}
-          className="rounded-2xl border border-white/30 bg-white/90 px-7 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-900 shadow-lg transition hover:scale-[1.02]"
-        >
-          Comecar
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={onStart}
+            className="rounded-2xl border border-white/30 bg-white/90 px-7 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-900 shadow-lg transition hover:scale-[1.02]"
+          >
+            Comecar
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenRanking}
@@ -50,13 +54,15 @@ export const HomeScreen = ({
             Meus quizzes
           </button>
         )}
-        <button
-          type="button"
-          onClick={onOpenBuilder}
-          className="rounded-2xl border border-cyan-200/45 bg-cyan-500/20 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-cyan-100"
-        >
-          Abrir builder
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={onOpenBuilder}
+            className="rounded-2xl border border-cyan-200/45 bg-cyan-500/20 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-cyan-100"
+          >
+            Abrir builder
+          </button>
+        )}
       </div>
     </section>
   )
