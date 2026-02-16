@@ -56,11 +56,19 @@ function App() {
       return <AuthScreen mode={accessMode} onGoogleLogin={() => void handleGoogleLogin()} />
     }
 
+    const isPublishedLevelFlow =
+      (contextValue.screen === 'quiz' ||
+        contextValue.screen === 'levelResult' ||
+        contextValue.screen === 'final') &&
+      Boolean(contextValue.sharedQuiz || contextValue.selectedLevel?.isPublished)
+
     const isRestrictedForNonAdmin =
       contextValue.screen !== 'home' &&
+      contextValue.screen !== 'play' &&
       contextValue.screen !== 'ranking' &&
       contextValue.screen !== 'myQuizzes' &&
-      contextValue.screen !== 'respondResult'
+      contextValue.screen !== 'respondResult' &&
+      !isPublishedLevelFlow
 
     if (accessMode === 'admin' && !isAdmin && isRestrictedForNonAdmin) {
       return (

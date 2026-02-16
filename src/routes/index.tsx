@@ -7,12 +7,15 @@ export const Route = createFileRoute('/')({
 })
 
 function HomeRoute() {
-  const { goBuilder, goCategories, goMyQuizzes, goRanking, hasSession, isAdmin } = useQuizApp()
+  const { goBuilder, goCategories, goMyQuizzes, goPlay, goRanking, hasSession, isAdmin } =
+    useQuizApp()
 
   return (
     <HomeScreen
       isAdmin={isAdmin}
+      canOpenPlay={hasSession}
       onStart={goCategories}
+      onOpenPlay={goPlay}
       onOpenBuilder={goBuilder}
       onOpenRanking={goRanking}
       onOpenMyQuizzes={goMyQuizzes}

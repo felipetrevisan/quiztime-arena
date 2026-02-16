@@ -63,10 +63,12 @@ export interface QuizAppContextValue {
   goHome: () => void
   goBuilder: () => void
   goCategories: () => void
+  goPlay: () => void
   goRanking: () => void
   goMyQuizzes: () => void
   goLevels: (categoryId: string) => void
   openLevel: (categoryId: string, levelId: string) => void
+  playPublishedLevel: (categoryId: string, levelId: string) => void
   handleCorrect: () => void
   handleFinishLevel: () => void
   handleNextAfterLevel: () => void
@@ -85,6 +87,12 @@ export interface QuizAppContextValue {
     mode: LevelMode,
     timingMode: TimingMode,
   ) => void
+  handleDeleteLevel: (categoryId: string, levelId: string) => Promise<boolean>
+  handleToggleLevelPublished: (
+    categoryId: string,
+    levelId: string,
+    nextPublished: boolean,
+  ) => Promise<boolean>
   handleUpdateQuestion: (payload: {
     categoryId: string
     levelId: string

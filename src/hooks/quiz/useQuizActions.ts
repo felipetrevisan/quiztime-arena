@@ -71,6 +71,7 @@ interface UseQuizActionsParams {
 
 export const useQuizActions = (params: UseQuizActionsParams) => {
   const gameplayActions = useGameplayActions({
+    config: params.config,
     categories: params.categories,
     selectedCategory: params.selectedCategory,
     selectedLevel: params.selectedLevel,
@@ -82,6 +83,8 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     answers: params.answers,
     results: params.results,
     drafts: params.drafts,
+    rankings: params.rankings,
+    currentUserId: params.currentUserId,
     uploadedImages: params.uploadedImages,
     setRecords: params.setRecords,
     setDrafts: params.setDrafts,

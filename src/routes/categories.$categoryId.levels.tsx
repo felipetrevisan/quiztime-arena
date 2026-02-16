@@ -22,9 +22,11 @@ function LevelsRoute() {
     shareLinks,
     shortLinks,
     handleCopyShareLink,
+    handleDeleteLevel,
     handleGenerateShareLink,
     handleShareRankingPreview,
     handleShortenShareLink,
+    handleToggleLevelPublished,
   } = useQuizApp()
 
   const isLevelsIndex = Boolean(
@@ -63,6 +65,10 @@ function LevelsRoute() {
       onCopyShareLink={handleCopyShareLink}
       onShareRankingPreview={handleShareRankingPreview}
       onShortenShareLink={handleShortenShareLink}
+      onDeleteLevel={(levelId) => handleDeleteLevel(category.id, levelId)}
+      onToggleLevelPublished={(levelId, nextPublished) =>
+        handleToggleLevelPublished(category.id, levelId, nextPublished)
+      }
     />
   )
 }

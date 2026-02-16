@@ -1,5 +1,6 @@
 import type { Category, LevelRecord } from '@/types/quiz'
 import { motion } from 'motion/react'
+import { useState } from 'react'
 
 interface LevelsScreenProps {
   category: Category
@@ -13,6 +14,8 @@ interface LevelsScreenProps {
   onCopyShareLink: (levelId: string) => void
   onShareRankingPreview: (levelId: string) => void
   onShortenShareLink: (levelId: string) => void
+  onDeleteLevel: (levelId: string) => Promise<boolean>
+  onToggleLevelPublished: (levelId: string, nextPublished: boolean) => Promise<boolean>
 }
 
 export const LevelsScreen = ({
@@ -27,7 +30,11 @@ export const LevelsScreen = ({
   onCopyShareLink,
   onShareRankingPreview,
   onShortenShareLink,
+  onDeleteLevel,
+  onToggleLevelPublished,
 }: LevelsScreenProps) => {
+  const [feedback, setFeedback] = useState<string | null>(null)
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="mb-4 flex items-center justify-between">
@@ -45,6 +52,11 @@ export const LevelsScreen = ({
           Voltar
         </button>
       </div>
+      {feedback && (
+        <p className="mb-3 rounded-lg border border-emerald-300/30 bg-emerald-500/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-100">
+          {feedback}
+        </p>
+      )}
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <motion.div
@@ -93,6 +105,13 @@ export const LevelsScreen = ({
                     </p>
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-100/80">
                       {level.timingMode === 'speedrun' ? 'Modo Speed Run' : 'Modo Sem Tempo'}
+                    </p>
+                    <p
+                      className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                        level.isPublished ? 'text-emerald-200/90' : 'text-white/70'
+                      }`}
+                    >
+                      {level.isPublished ? 'Publicado' : 'Nao publicado'}
                     </p>
                     {linkToShow && (
                       <>
@@ -171,6 +190,43 @@ export const LevelsScreen = ({
                         Copiar ranking
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={async (event) => {
+                        event.stopPropagation()
+                        const nextPublished = !level.isPublished
+                        const ok = await onToggleLevelPublished(level.id, nextPublished)
+                        setFeedback(
+                          ok
+                            ? nextPublished
+                              ? 'Quiz publicado com sucesso.'
+                              : 'Quiz removido da lista publica.'
+                            : 'Nao foi possivel atualizar publicacao.',
+                        )
+                      }}
+                      className="rounded-lg border border-emerald-200/40 bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-100"
+                    >
+                      {level.isPublished ? 'Despublicar' : 'Publicar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async (event) => {
+                        event.stopPropagation()
+                        const confirmed = window.confirm(
+                          `Excluir o nivel \"${level.title}\"? Essa acao nao pode ser desfeita.`,
+                        )
+                        if (!confirmed) {
+                          return
+                        }
+                        const ok = await onDeleteLevel(level.id)
+                        setFeedback(
+                          ok ? 'Nivel excluido com sucesso.' : 'Nao foi possivel excluir o nivel.',
+                        )
+                      }}
+                      className="rounded-lg border border-rose-200/45 bg-rose-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-100"
+                    >
+                      Excluir
+                    </button>
                   </div>
                 </div>
               </motion.button>

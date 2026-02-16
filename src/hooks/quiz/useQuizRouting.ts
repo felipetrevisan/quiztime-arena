@@ -7,6 +7,7 @@ const appRoutes = {
   home: '/',
   builder: '/builder',
   categories: '/categories',
+  play: '/play',
   levels: '/categories/$categoryId/levels',
   quiz: '/categories/$categoryId/levels/$levelId/quiz',
   levelResult: '/categories/$categoryId/levels/$levelId/result',
@@ -39,6 +40,10 @@ export const useQuizRouting = () => {
 
   const goCategories = useCallback(() => {
     void navigate({ to: appRoutes.categories })
+  }, [navigate])
+
+  const goPlay = useCallback(() => {
+    void navigate({ to: appRoutes.play })
   }, [navigate])
 
   const goLevels = useCallback(
@@ -95,6 +100,7 @@ export const useQuizRouting = () => {
     goHome,
     goBuilder,
     goCategories,
+    goPlay,
     goLevels,
     goQuiz,
     goLevelResult,

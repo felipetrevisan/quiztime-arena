@@ -64,6 +64,7 @@ export const BuilderPanel = ({
   const [questionPrompt, setQuestionPrompt] = useState('')
   const [correctAnswerDisplay, setCorrectAnswerDisplay] = useState('')
   const [acceptedAnswersInput, setAcceptedAnswersInput] = useState('')
+  const [feedback, setFeedback] = useState<string | null>(null)
 
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ id: category.id, label: category.title })),
@@ -155,6 +156,11 @@ export const BuilderPanel = ({
       <p className="text-xs text-white/75">
         Crie niveis com perguntas ou em branco com 8 alternativas.
       </p>
+      {feedback && (
+        <p className="rounded-lg border border-emerald-300/30 bg-emerald-500/15 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-100">
+          {feedback}
+        </p>
+      )}
 
       {showCategorySection && (
         <div className="space-y-2 rounded-xl border border-white/15 bg-black/20 p-3">
@@ -190,6 +196,7 @@ export const BuilderPanel = ({
               setCategoryTitle('')
               setCategoryDescription('')
               setCategoryId(id)
+              setFeedback('Categoria salva com sucesso.')
             }}
             className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
           >
@@ -265,6 +272,7 @@ export const BuilderPanel = ({
               )
               setLevelTitle('')
               setLevelDescription('')
+              setFeedback('Nivel criado com sucesso.')
             }}
             className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
           >
@@ -358,6 +366,7 @@ export const BuilderPanel = ({
                 correctAnswerDisplay: correct,
                 acceptedAnswers,
               })
+              setFeedback('Gabarito atualizado com sucesso.')
             }}
             className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
           >
@@ -381,15 +390,16 @@ export const BuilderPanel = ({
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(event) => {
+                    onChange={async (event) => {
                       const file = event.target.files?.[0]
                       if (!file || !questionCategoryId || !questionLevelId || !questionId) return
-                      void onUploadQuestionImage({
+                      await onUploadQuestionImage({
                         categoryId: questionCategoryId,
                         levelId: questionLevelId,
                         questionId,
                         file,
                       })
+                      setFeedback('Imagem enviada com sucesso.')
                       event.target.value = ''
                     }}
                   />

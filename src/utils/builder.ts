@@ -31,5 +31,6 @@ export const createEmptyLevel = (
   description,
   mode,
   timingMode,
+  isPublished: false,
   questions: Array.from({ length: 8 }, (_, index) => makeQuestion(index, mode)),
 })

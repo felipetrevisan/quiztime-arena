@@ -1,10 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react'
 
 import type {
+  AppConfig,
   Category,
   Level,
   LevelDraft,
   LevelRecord,
+  RankingEntry,
   ResponderResult,
   ShareQuizPayload,
   TimingMode,
@@ -16,6 +18,7 @@ import { levelKey, removeCategoryKeys } from '../shared'
 import { revokeBlobUrls } from './shared'
 
 interface UseGameplayActionsParams {
+  config: AppConfig
   categories: Category[]
   selectedCategory: Category | null
   selectedLevel: Level | null
@@ -27,6 +30,8 @@ interface UseGameplayActionsParams {
   answers: Record<string, string>
   results: Record<string, boolean>
   drafts: Record<string, LevelDraft>
+  rankings: RankingEntry[]
+  currentUserId: string | null
   uploadedImages: Record<string, string>
   setRecords: Dispatch<SetStateAction<Record<string, LevelRecord>>>
   setDrafts: Dispatch<SetStateAction<Record<string, LevelDraft>>>
@@ -51,6 +56,7 @@ interface UseGameplayActionsParams {
 
 export const useGameplayActions = (params: UseGameplayActionsParams) => {
   const {
+    config,
     categories,
     selectedCategory,
     selectedLevel,
@@ -62,6 +68,8 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     answers,
     results,
     drafts,
+    rankings,
+    currentUserId,
     uploadedImages,
     setRecords,
     setDrafts,
@@ -120,6 +128,51 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     }
 
     goQuiz(categoryId, levelId)
+  }
+
+  const playPublishedLevel = (categoryId: string, levelId: string) => {
+    const category = categories.find((item) => item.id === categoryId)
+    const level = category?.levels.find((item) => item.id === levelId)
+    if (!category || !level || !level.isPublished) {
+      return
+    }
+
+    const hasPlayed = rankings.some((entry) => {
+      if (!currentUserId || entry.userId !== currentUserId) {
+        return false
+      }
+
+      if (entry.categoryId && entry.levelId) {
+        return entry.categoryId === category.id && entry.levelId === level.id
+      }
+
+      return (
+        entry.categoryTitle.toLowerCase() === category.title.toLowerCase() &&
+        entry.levelTitle.toLowerCase() === level.title.toLowerCase()
+      )
+    })
+
+    if (hasPlayed && level.timingMode !== 'speedrun') {
+      return
+    }
+
+    resetQuizBuffers()
+
+    setSharedQuiz({
+      version: 1,
+      quizId: `published-${category.id}-${level.id}`,
+      categoryId: category.id,
+      categoryTitle: category.title,
+      levelId: level.id,
+      title: config.title,
+      subtitle: config.subtitle,
+      themeId: config.themeId,
+      level,
+    })
+    setSelectedCategoryId(category.id)
+    setSelectedLevelId(level.id)
+    setQuizStartedAtMs(Date.now())
+    goQuiz(category.id, level.id)
   }
 
   const handleCorrect = () => {
@@ -247,6 +300,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
 
   return {
     openLevel,
+    playPublishedLevel,
     handleCorrect,
     handleFinishLevel,
     handleNextAfterLevel,

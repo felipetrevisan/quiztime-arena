@@ -1,6 +1,7 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 
 import {
+  deleteRemoteLevel,
   updateRemoteQuestionImage,
   uploadRemoteAsset,
   upsertRemoteCategory,
@@ -194,6 +195,71 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
   }
 
+  const handleDeleteLevel = async (categoryId: string, levelId: string): Promise<boolean> => {
+    const currentCategory = categories.find((category) => category.id === categoryId)
+    if (!currentCategory) {
+      return false
+    }
+
+    const hasLevel = currentCategory.levels.some((level) => level.id === levelId)
+    if (!hasLevel) {
+      return false
+    }
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== categoryId) {
+          return category
+        }
+        return {
+          ...category,
+          levels: category.levels.filter((level) => level.id !== levelId),
+        }
+      }),
+    )
+
+    if (!remoteEnabled) {
+      return true
+    }
+
+    return deleteRemoteLevel(levelId)
+  }
+
+  const handleToggleLevelPublished = async (
+    categoryId: string,
+    levelId: string,
+    nextPublished: boolean,
+  ): Promise<boolean> => {
+    const currentCategory = categories.find((category) => category.id === categoryId)
+    const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
+    const levelPosition = currentCategory?.levels.findIndex((level) => level.id === levelId) ?? -1
+
+    if (!currentCategory || !currentLevel) {
+      return false
+    }
+
+    const nextLevel = { ...currentLevel, isPublished: nextPublished }
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== categoryId) {
+          return category
+        }
+        return {
+          ...category,
+          levels: category.levels.map((level) => (level.id === levelId ? nextLevel : level)),
+        }
+      }),
+    )
+
+    if (!remoteEnabled) {
+      return true
+    }
+
+    await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    return true
+  }
+
   const handleUpdateQuestion = async (payload: {
     categoryId: string
     levelId: string
@@ -250,6 +316,8 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     handleQuestionImageUpload,
     handleAddCategory,
     handleAddLevel,
+    handleDeleteLevel,
+    handleToggleLevelPublished,
     handleUpdateQuestion,
   }
 }

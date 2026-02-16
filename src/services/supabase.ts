@@ -17,6 +17,7 @@ interface LevelRow {
   description: string
   mode: 'quiz' | 'blank' | null
   timing_mode: 'timeless' | 'speedrun' | null
+  is_published: boolean | null
   position: number
   questions: QuestionRow[] | null
 }
@@ -33,6 +34,8 @@ interface QuestionRow {
 interface RankingRow {
   submission_id: string
   quiz_id: string
+  category_id: string | null
+  level_id: string | null
   user_id: string | null
   responder_name: string
   responder_avatar_data_url: string | null
@@ -62,6 +65,7 @@ const toLevel = (row: LevelRow): Level => ({
   description: row.description,
   mode: row.mode ?? 'quiz',
   timingMode: row.timing_mode ?? 'timeless',
+  isPublished: row.is_published ?? false,
   questions: (row.questions ?? [])
     .slice()
     .sort((left, right) => left.position - right.position)
@@ -84,6 +88,8 @@ const toRankingEntry = (row: RankingRow): RankingEntry => ({
   version: 1,
   submissionId: row.submission_id,
   quizId: row.quiz_id,
+  categoryId: row.category_id ?? undefined,
+  levelId: row.level_id ?? undefined,
   userId: row.user_id,
   responderName: row.responder_name,
   responderAvatarDataUrl: row.responder_avatar_data_url,
@@ -107,7 +113,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,position))',
     )
     .order('position', { ascending: true })
 
@@ -158,6 +164,7 @@ const upsertLevel = async (categoryId: string, level: Level, position: number): 
       description: level.description,
       mode: level.mode ?? 'quiz',
       timing_mode: level.timingMode ?? 'timeless',
+      is_published: level.isPublished ?? false,
       position,
     },
     {
@@ -238,7 +245,7 @@ export const fetchRemoteRankings = async (): Promise<RankingEntry[] | null> => {
   const { data, error } = await supabase
     .from('rankings')
     .select(
-      'submission_id,quiz_id,user_id,responder_name,responder_avatar_data_url,category_title,level_title,score,total,points,duration_ms,play_mode,answers,results,submitted_at',
+      'submission_id,quiz_id,category_id,level_id,user_id,responder_name,responder_avatar_data_url,category_title,level_title,score,total,points,duration_ms,play_mode,answers,results,submitted_at',
     )
     .order('submitted_at', { ascending: false })
 
@@ -258,6 +265,8 @@ export const saveRemoteRanking = async (entry: RankingEntry): Promise<boolean> =
     {
       submission_id: entry.submissionId,
       quiz_id: entry.quizId,
+      category_id: entry.categoryId ?? null,
+      level_id: entry.levelId ?? null,
       user_id: entry.userId ?? null,
       responder_name: entry.responderName,
       responder_avatar_data_url: entry.responderAvatarDataUrl,
@@ -304,3 +313,17 @@ export const uploadRemoteAsset = async (file: File, path: string): Promise<strin
 }
 
 export const hasRemote = (): boolean => isSupabaseEnabled
+
+export const deleteRemoteLevel = async (levelId: string): Promise<boolean> => {
+  if (!supabase) {
+    return false
+  }
+
+  const { error } = await supabase.from('levels').delete().eq('id', levelId)
+  if (error) {
+    console.error('Erro ao excluir nivel no Supabase', error)
+    return false
+  }
+
+  return true
+}

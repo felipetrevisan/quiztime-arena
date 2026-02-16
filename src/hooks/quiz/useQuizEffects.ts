@@ -219,6 +219,7 @@ export const useAccessAndSharedQuery = (params: {
 
     const isPublicUserPath =
       location.pathname === '/' ||
+      location.pathname === '/play' ||
       location.pathname === '/ranking' ||
       location.pathname === '/my-quizzes'
 
@@ -240,6 +241,8 @@ export const useAccessAndSharedQuery = (params: {
       if (submission?.version === 1) {
         const normalizedSubmission: RankingEntry = {
           ...submission,
+          categoryId: submission.categoryId,
+          levelId: submission.levelId,
           userId: submission.userId ?? null,
           playMode: (submission.playMode as TimingMode | undefined) ?? 'timeless',
           points: submission.points ?? submission.score,

@@ -120,6 +120,10 @@ export const getScreenFromPath = (
     return { screen: 'categories' }
   }
 
+  if (normalized === '/play') {
+    return { screen: 'play' }
+  }
+
   if (normalized === '/final') {
     return { screen: 'final' }
   }

@@ -3,6 +3,7 @@ export type Screen =
   | 'builder'
   | 'categories'
   | 'levels'
+  | 'play'
   | 'quiz'
   | 'levelResult'
   | 'final'
@@ -30,6 +31,7 @@ export interface Level {
   description: string
   mode?: LevelMode
   timingMode?: TimingMode
+  isPublished?: boolean
   questions: Question[]
 }
 
@@ -106,6 +108,8 @@ export interface ShareSubmissionPayload {
   version: 1
   submissionId: string
   quizId: string
+  categoryId?: string
+  levelId?: string
   userId?: string | null
   responderName: string
   responderAvatarDataUrl: string | null

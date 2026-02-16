@@ -1,6 +1,8 @@
 interface HomeScreenProps {
   isAdmin: boolean
+  canOpenPlay: boolean
   onStart: () => void
+  onOpenPlay: () => void
   onOpenBuilder: () => void
   onOpenRanking: () => void
   onOpenMyQuizzes: () => void
@@ -9,7 +11,9 @@ interface HomeScreenProps {
 
 export const HomeScreen = ({
   isAdmin,
+  canOpenPlay,
   onStart,
+  onOpenPlay,
   onOpenBuilder,
   onOpenRanking,
   onOpenMyQuizzes,
@@ -32,6 +36,15 @@ export const HomeScreen = ({
             className="rounded-2xl border border-white/30 bg-white/90 px-7 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-900 shadow-lg transition hover:scale-[1.02]"
           >
             Comecar
+          </button>
+        )}
+        {canOpenPlay && (
+          <button
+            type="button"
+            onClick={onOpenPlay}
+            className="rounded-2xl border border-fuchsia-200/45 bg-fuchsia-500/20 px-7 py-3 text-xs font-bold uppercase tracking-[0.14em] text-fuchsia-100"
+          >
+            Jogar quizzes
           </button>
         )}
         <button

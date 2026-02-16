@@ -19,6 +19,7 @@ create table if not exists public.levels (
   description text not null,
   mode text not null default 'quiz' check (mode in ('quiz', 'blank')),
   timing_mode text not null default 'timeless' check (timing_mode in ('timeless', 'speedrun')),
+  is_published boolean not null default false,
   position integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -39,6 +40,8 @@ create table if not exists public.questions (
 create table if not exists public.rankings (
   submission_id text primary key,
   quiz_id text not null,
+  category_id text,
+  level_id text,
   user_id uuid references auth.users(id) on delete set null,
   responder_name text not null,
   responder_avatar_data_url text,
@@ -58,6 +61,9 @@ create table if not exists public.rankings (
 alter table public.levels
   add column if not exists timing_mode text not null default 'timeless';
 
+alter table public.levels
+  add column if not exists is_published boolean not null default false;
+
 alter table public.rankings
   add column if not exists points integer not null default 0;
 
@@ -69,6 +75,12 @@ alter table public.rankings
 
 alter table public.rankings
   add column if not exists user_id uuid references auth.users(id) on delete set null;
+
+alter table public.rankings
+  add column if not exists category_id text;
+
+alter table public.rankings
+  add column if not exists level_id text;
 
 create index if not exists rankings_user_id_idx on public.rankings(user_id);
 
