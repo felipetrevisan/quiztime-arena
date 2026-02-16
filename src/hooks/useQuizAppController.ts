@@ -3,6 +3,7 @@ import { themes } from '@/data/themes'
 import { hasRemote } from '@/services/supabase'
 import type { AccessMode, AppConfig, Level, LevelRecord, ThemeOption } from '@/types/quiz'
 import { supabase } from '@/utils/supabase'
+import { buildPublicAppUrl } from '@/utils/url'
 import type { Session } from '@supabase/supabase-js'
 import { useMemo, useRef, useState } from 'react'
 
@@ -259,10 +260,12 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
       return
     }
 
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.href,
+        redirectTo: buildPublicAppUrl(currentPath),
       },
     })
   }
