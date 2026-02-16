@@ -88,7 +88,8 @@ Esse arquivo cria:
 - bucket `quiz-assets`
 - policies com auth:
   - leitura para usuarios autenticados
-  - escrita somente admin
+  - escrita de conteudo (categorias/niveis/perguntas) somente admin
+  - envio de ranking permitido para usuarios autenticados
 
 Depois, adicione seu email como admin:
 
@@ -146,13 +147,13 @@ bun run lint:fix
 3. Nome e avatar sao preenchidos automaticamente (pode ajustar se quiser).
 4. Responda as perguntas.
 5. Clique em `Corrigir` e depois finalize.
-6. Gere o `link de envio` do resultado.
-7. Envie esse link para o criador do quiz.
+6. O resultado e enviado automaticamente para o ranking.
+7. Se quiser, clique em `Ver ranking`.
 
 ## Ranking
 
-- O criador abre o link de importacao (`?import=...`).
-- O resultado e salvo no ranking local e, com Supabase ativo, tambem no banco remoto.
+- O resultado do respondente e salvo automaticamente.
+- Com Supabase ativo, o resultado tambem e salvo no banco remoto.
 - O ranking mostra nome, avatar e pontuacao.
 - Preview publico autenticado por quiz: `?ranking=<quizId>`.
 

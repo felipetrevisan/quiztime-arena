@@ -8,6 +8,7 @@ import type {
   LevelDraft,
   LevelRecord,
   RankingEntry,
+  ResponderResult,
   ShareQuizPayload,
 } from '@/types/quiz'
 import { useLocalStorageState } from '@/utils/storage'
@@ -58,7 +59,7 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
   const [sharedQuiz, setSharedQuiz] = useState<ShareQuizPayload | null>(null)
   const [rankingPreviewQuizId, setRankingPreviewQuizId] = useState<string | null>(null)
   const [accessMode, setAccessMode] = useState<AccessMode>('admin')
-  const [sharedResult, setSharedResult] = useState<{ score: number; total: number } | null>(null)
+  const [sharedResult, setSharedResult] = useState<ResponderResult | null>(null)
   const [responderName, setResponderName] = useState('')
   const [responderAvatarDataUrl, setResponderAvatarDataUrl] = useState<string | null>(null)
   const [responderAvatarFile, setResponderAvatarFile] = useState<File | null>(null)

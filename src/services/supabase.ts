@@ -240,8 +240,8 @@ export const fetchRemoteRankings = async (): Promise<RankingEntry[] | null> => {
   return rows.map(toRankingEntry)
 }
 
-export const saveRemoteRanking = async (entry: RankingEntry): Promise<void> => {
-  if (!supabase) return
+export const saveRemoteRanking = async (entry: RankingEntry): Promise<boolean> => {
+  if (!supabase) return false
 
   const { error } = await supabase.from('rankings').upsert(
     {
@@ -265,7 +265,10 @@ export const saveRemoteRanking = async (entry: RankingEntry): Promise<void> => {
 
   if (error) {
     console.error('Erro ao salvar ranking no Supabase', error)
+    return false
   }
+
+  return true
 }
 
 export const uploadRemoteAsset = async (file: File, path: string): Promise<string | null> => {

@@ -6,6 +6,8 @@ import type {
   Level,
   LevelDraft,
   LevelRecord,
+  RankingEntry,
+  ResponderResult,
   ShareQuizPayload,
 } from '@/types/quiz'
 
@@ -29,8 +31,9 @@ interface UseQuizActionsParams {
   shareQuizIds: Record<string, string>
   rankingPreviewLinks: Record<string, string>
   shortLinks: Record<string, string>
+  rankings: RankingEntry[]
   sharedQuiz: ShareQuizPayload | null
-  sharedResult: { score: number; total: number } | null
+  sharedResult: ResponderResult | null
   config: AppConfig
   responderName: string
   responderAvatarDataUrl: string | null
@@ -50,8 +53,9 @@ interface UseQuizActionsParams {
   setShareQuizIds: Dispatch<SetStateAction<Record<string, string>>>
   setRankingPreviewLinks: Dispatch<SetStateAction<Record<string, string>>>
   setShortLinks: Dispatch<SetStateAction<Record<string, string>>>
+  setRankings: Dispatch<SetStateAction<RankingEntry[]>>
   setSharedQuiz: Dispatch<SetStateAction<ShareQuizPayload | null>>
-  setSharedResult: Dispatch<SetStateAction<{ score: number; total: number } | null>>
+  setSharedResult: Dispatch<SetStateAction<ResponderResult | null>>
   setResponderName: Dispatch<SetStateAction<string>>
   setResponderAvatarDataUrl: Dispatch<SetStateAction<string | null>>
   setResponderAvatarFile: Dispatch<SetStateAction<File | null>>
@@ -111,6 +115,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     shareQuizIds: params.shareQuizIds,
     rankingPreviewLinks: params.rankingPreviewLinks,
     shortLinks: params.shortLinks,
+    rankings: params.rankings,
     sharedQuiz: params.sharedQuiz,
     sharedResult: params.sharedResult,
     config: params.config,
@@ -120,6 +125,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     answers: params.answers,
     results: params.results,
     remoteEnabled: params.remoteEnabled,
+    setRankings: params.setRankings,
     setShareLinks: params.setShareLinks,
     setShareQuizIds: params.setShareQuizIds,
     setRankingPreviewLinks: params.setRankingPreviewLinks,

@@ -1,6 +1,13 @@
 import type { Dispatch, SetStateAction } from 'react'
 
-import type { Category, Level, LevelDraft, LevelRecord, ShareQuizPayload } from '@/types/quiz'
+import type {
+  Category,
+  Level,
+  LevelDraft,
+  LevelRecord,
+  ResponderResult,
+  ShareQuizPayload,
+} from '@/types/quiz'
 import { isAnswerCorrect } from '@/utils/normalize'
 
 import { levelKey, removeCategoryKeys } from '../shared'
@@ -27,7 +34,7 @@ interface UseGameplayActionsParams {
   setCorrected: Dispatch<SetStateAction<boolean>>
   setUploadedImages: Dispatch<SetStateAction<Record<string, string>>>
   setSharedQuiz: Dispatch<SetStateAction<ShareQuizPayload | null>>
-  setSharedResult: Dispatch<SetStateAction<{ score: number; total: number } | null>>
+  setSharedResult: Dispatch<SetStateAction<ResponderResult | null>>
   setResponderName: Dispatch<SetStateAction<string>>
   setResponderAvatarDataUrl: Dispatch<SetStateAction<string | null>>
   setResponderAvatarFile: Dispatch<SetStateAction<File | null>>
@@ -151,6 +158,7 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
       setSharedResult({
         score,
         total: activeLevel.questions.length,
+        attemptId: `submission-${crypto.randomUUID()}`,
       })
       goRespondResult()
       return

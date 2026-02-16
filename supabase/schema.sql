@@ -140,8 +140,14 @@ create policy "authenticated read rankings" on public.rankings
 for select using (public.is_authenticated());
 drop policy if exists "admin write rankings" on public.rankings;
 drop policy if exists "public write rankings" on public.rankings;
-create policy "admin write rankings" on public.rankings
-for all using (public.is_admin()) with check (public.is_admin());
+create policy "authenticated insert rankings" on public.rankings
+for insert with check (public.is_authenticated());
+drop policy if exists "admin update rankings" on public.rankings;
+create policy "admin update rankings" on public.rankings
+for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "admin delete rankings" on public.rankings;
+create policy "admin delete rankings" on public.rankings
+for delete using (public.is_admin());
 
 insert into storage.buckets (id, name, public)
 values ('quiz-assets', 'quiz-assets', true)

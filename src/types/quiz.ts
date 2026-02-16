@@ -75,6 +75,12 @@ export interface LevelDraft {
   corrected: boolean
 }
 
+export interface ResponderResult {
+  score: number
+  total: number
+  attemptId: string
+}
+
 export interface ShareQuizPayload {
   version: 1
   quizId: string

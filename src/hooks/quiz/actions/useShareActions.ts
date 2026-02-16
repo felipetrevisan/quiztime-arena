@@ -1,7 +1,14 @@
 import type { Dispatch, SetStateAction } from 'react'
 
-import { uploadRemoteAsset } from '@/services/supabase'
-import type { AppConfig, Category, ShareQuizPayload, ShareSubmissionPayload } from '@/types/quiz'
+import { saveRemoteRanking, uploadRemoteAsset } from '@/services/supabase'
+import type {
+  AppConfig,
+  Category,
+  RankingEntry,
+  ResponderResult,
+  ShareQuizPayload,
+  ShareSubmissionPayload,
+} from '@/types/quiz'
 import { fileToAvatarDataUrl } from '@/utils/image'
 import { copyText, encodePayload } from '@/utils/share'
 import { getPublicAppBaseUrl } from '@/utils/url'
@@ -15,8 +22,9 @@ interface UseShareActionsParams {
   shareQuizIds: Record<string, string>
   rankingPreviewLinks: Record<string, string>
   shortLinks: Record<string, string>
+  rankings: RankingEntry[]
   sharedQuiz: ShareQuizPayload | null
-  sharedResult: { score: number; total: number } | null
+  sharedResult: ResponderResult | null
   config: AppConfig
   responderName: string
   responderAvatarDataUrl: string | null
@@ -24,6 +32,7 @@ interface UseShareActionsParams {
   answers: Record<string, string>
   results: Record<string, boolean>
   remoteEnabled: boolean
+  setRankings: Dispatch<SetStateAction<RankingEntry[]>>
   setShareLinks: Dispatch<SetStateAction<Record<string, string>>>
   setShareQuizIds: Dispatch<SetStateAction<Record<string, string>>>
   setRankingPreviewLinks: Dispatch<SetStateAction<Record<string, string>>>
@@ -39,6 +48,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     shareQuizIds,
     rankingPreviewLinks,
     shortLinks,
+    rankings,
     sharedQuiz,
     sharedResult,
     config,
@@ -48,6 +58,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     answers,
     results,
     remoteEnabled,
+    setRankings,
     setShareLinks,
     setShareQuizIds,
     setRankingPreviewLinks,
@@ -213,7 +224,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
 
     const payload: ShareSubmissionPayload = {
       version: 1,
-      submissionId: `submission-${crypto.randomUUID()}`,
+      submissionId: sharedResult.attemptId,
       quizId: sharedQuiz.quizId,
       responderName: safeName,
       responderAvatarDataUrl: avatarValue,
@@ -230,6 +241,59 @@ export const useShareActions = (params: UseShareActionsParams) => {
     return `${appBaseUrl}/ranking?import=${encoded}`
   }
 
+  const handleSubmitResponderResult = async (): Promise<boolean> => {
+    if (!sharedQuiz || !sharedResult) {
+      return false
+    }
+
+    const safeName = responderName.trim() || 'Jogador'
+    let avatarValue = responderAvatarDataUrl
+
+    if (remoteEnabled && responderAvatarFile) {
+      const extension = getFileExtension(responderAvatarFile.name)
+      const avatarPath = `avatars/${safeName.replace(/\s+/g, '-').toLowerCase()}-${crypto.randomUUID()}.${extension}`
+      const remoteAvatarUrl = await uploadRemoteAsset(responderAvatarFile, avatarPath)
+      if (remoteAvatarUrl) {
+        avatarValue = remoteAvatarUrl
+      }
+    }
+
+    const entry: RankingEntry = {
+      version: 1,
+      submissionId: sharedResult.attemptId,
+      quizId: sharedQuiz.quizId,
+      responderName: safeName,
+      responderAvatarDataUrl: avatarValue,
+      categoryTitle: sharedQuiz.categoryTitle,
+      levelTitle: sharedQuiz.level.title,
+      score: sharedResult.score,
+      total: sharedResult.total,
+      answers,
+      results,
+      submittedAt: new Date().toISOString(),
+    }
+
+    if (rankings.some((item) => item.submissionId === entry.submissionId)) {
+      return true
+    }
+
+    if (remoteEnabled) {
+      const saved = await saveRemoteRanking(entry)
+      if (!saved) {
+        return false
+      }
+    }
+
+    setRankings((previous) => {
+      if (previous.some((item) => item.submissionId === entry.submissionId)) {
+        return previous
+      }
+      return [entry, ...previous]
+    })
+
+    return true
+  }
+
   const handleResponderAvatarUpload = async (file: File) => {
     const dataUrl = await fileToAvatarDataUrl(file)
     setResponderAvatarFile(file)
@@ -242,6 +306,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     handleShareRankingPreview,
     handleShortenShareLink,
     handleBuildSubmissionLink,
+    handleSubmitResponderResult,
     handleResponderAvatarUpload,
   }
 }

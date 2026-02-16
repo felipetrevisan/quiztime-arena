@@ -62,8 +62,8 @@ export const RankingScreen = ({
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {sorted.length === 0 ? (
           <div className="rounded-2xl border border-white/20 bg-black/30 p-4 text-sm text-white/80">
-            Nenhuma resposta recebida ainda. Gere um link e importe os resultados para montar o
-            ranking.
+            Nenhuma resposta recebida ainda. Compartilhe um link do quiz para comecar a receber
+            respostas.
           </div>
         ) : (
           sorted.map((entry, index) => {

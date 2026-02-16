@@ -10,6 +10,7 @@ import type {
   LevelMode,
   LevelRecord,
   RankingEntry,
+  ResponderResult,
   ShareQuizPayload,
   ThemeOption,
 } from '@/types/quiz'
@@ -38,7 +39,7 @@ export interface QuizAppContextValue {
   activeLevel: Level | null
   activeTheme: ThemeOption
   sharedQuiz: ShareQuizPayload | null
-  sharedResult: { score: number; total: number } | null
+  sharedResult: ResponderResult | null
   categoryTotals: { score: number; total: number }
   finalPercent: number
   activeRecord: LevelRecord | null
@@ -90,6 +91,7 @@ export interface QuizAppContextValue {
   handleShareRankingPreview: (levelId: string) => Promise<void>
   handleShortenShareLink: (levelId: string) => Promise<void>
   handleBuildSubmissionLink: () => Promise<string>
+  handleSubmitResponderResult: () => Promise<boolean>
   handleResponderAvatarUpload: (file: File) => Promise<void>
   handleGoogleLogin: () => Promise<void>
   handleSignOut: () => Promise<void>
