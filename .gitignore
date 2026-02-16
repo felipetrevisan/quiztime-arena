@@ -12,3 +12,4 @@ vite.config.d.ts
 .tanstack
 .vinxi
 quiztime-start-ref
+supabase/.temp
