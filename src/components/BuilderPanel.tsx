@@ -22,6 +22,12 @@ interface BuilderPanelProps {
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => void | Promise<void>
+  onUploadQuestionImage: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    file: File
+  }) => void | Promise<void>
 }
 
 const slugify = (value: string): string =>
@@ -43,6 +49,7 @@ export const BuilderPanel = ({
   onAddCategory,
   onAddLevel,
   onUpdateQuestion,
+  onUploadQuestionImage,
 }: BuilderPanelProps) => {
   const [categoryTitle, setCategoryTitle] = useState('')
   const [categoryDescription, setCategoryDescription] = useState('')
@@ -356,6 +363,40 @@ export const BuilderPanel = ({
           >
             Salvar gabarito
           </button>
+
+          {selectedLevel?.mode === 'blank' && selectedQuestion && (
+            <div className="rounded-lg border border-white/15 bg-black/25 p-2">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75">
+                Foto da alternativa
+              </p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={selectedQuestion.imagePath}
+                  alt="Preview da alternativa"
+                  className="h-14 w-14 rounded-full border border-white/30 object-cover"
+                />
+                <label className="cursor-pointer rounded-lg border border-white/30 bg-black/35 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                  Enviar foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file || !questionCategoryId || !questionLevelId || !questionId) return
+                      void onUploadQuestionImage({
+                        categoryId: questionCategoryId,
+                        levelId: questionLevelId,
+                        questionId,
+                        file,
+                      })
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </aside>

@@ -32,6 +32,12 @@ interface BuilderScreenProps {
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => void | Promise<void>
+  onUploadQuestionImage: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    file: File
+  }) => void | Promise<void>
   onBack: () => void
 }
 
@@ -55,6 +61,7 @@ export const BuilderScreen = ({
   onAddCategory,
   onAddLevel,
   onUpdateQuestion,
+  onUploadQuestionImage,
   onBack,
 }: BuilderScreenProps) => {
   const [activeTab, setActiveTab] = useState<BuilderTab>('config')
@@ -118,6 +125,7 @@ export const BuilderScreen = ({
             onAddCategory={onAddCategory}
             onAddLevel={onAddLevel}
             onUpdateQuestion={onUpdateQuestion}
+            onUploadQuestionImage={onUploadQuestionImage}
           />
         )}
       </div>

@@ -72,7 +72,11 @@ export interface QuizAppContextValue {
   handleNextAfterLevel: () => void
   handlePlayAgain: () => void
   handleBackgroundUpload: (event: ChangeEvent<HTMLInputElement>) => void
-  handleQuestionImageUpload: (questionId: string, file: File) => Promise<void>
+  handleQuestionImageUpload: (
+    questionId: string,
+    file: File,
+    options?: { categoryId: string; levelId: string },
+  ) => Promise<void>
   handleAddCategory: (category: Category) => Promise<void>
   handleAddLevel: (
     categoryId: string,

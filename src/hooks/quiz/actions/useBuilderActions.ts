@@ -49,7 +49,22 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     event.target.value = ''
   }
 
-  const handleQuestionImageUpload = async (questionId: string, file: File) => {
+  const handleQuestionImageUpload = async (
+    questionId: string,
+    file: File,
+    options?: { categoryId: string; levelId: string },
+  ) => {
+    const targetCategoryId = options?.categoryId ?? selectedCategory?.id
+    const targetLevelId = options?.levelId ?? selectedLevel?.id
+    const targetCategory =
+      categories.find((category) => category.id === targetCategoryId) ?? selectedCategory
+    const targetLevel =
+      targetCategory?.levels.find((level) => level.id === targetLevelId) ?? selectedLevel
+
+    if (!targetCategory || !targetLevel) {
+      return
+    }
+
     const localUrl = URL.createObjectURL(file)
 
     setUploadedImages((previous) => {
@@ -64,12 +79,36 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       }
     })
 
-    if (!remoteEnabled || !selectedCategory || !selectedLevel) {
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== targetCategory.id) {
+          return category
+        }
+
+        return {
+          ...category,
+          levels: category.levels.map((level) => {
+            if (level.id !== targetLevel.id) {
+              return level
+            }
+
+            return {
+              ...level,
+              questions: level.questions.map((question) =>
+                question.id === questionId ? { ...question, imagePath: localUrl } : question,
+              ),
+            }
+          }),
+        }
+      }),
+    )
+
+    if (!remoteEnabled) {
       return
     }
 
     const extension = getFileExtension(file.name)
-    const remotePath = `questions/${selectedCategory.id}/${selectedLevel.id}/${questionId}.${extension}`
+    const remotePath = `questions/${targetCategory.id}/${targetLevel.id}/${questionId}.${extension}`
     const remoteUrl = await uploadRemoteAsset(file, remotePath)
 
     if (!remoteUrl) {
@@ -92,14 +131,14 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
 
     setCategories((previous) =>
       previous.map((category) => {
-        if (category.id !== selectedCategory.id) {
+        if (category.id !== targetCategory.id) {
           return category
         }
 
         return {
           ...category,
           levels: category.levels.map((level) => {
-            if (level.id !== selectedLevel.id) {
+            if (level.id !== targetLevel.id) {
               return level
             }
 

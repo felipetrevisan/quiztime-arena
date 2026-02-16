@@ -23,10 +23,6 @@ export const HomeScreen = ({
       <h2 className="font-display text-4xl font-black uppercase tracking-[0.2em] text-white sm:text-5xl">
         QuizTime
       </h2>
-      <p className="mt-4 max-w-xs text-sm text-white/90">
-        Entre no frame 9:16, escolha sua categoria e marca V ou X como em uma folha de resposta
-        estilosa.
-      </p>
 
       <div className="mt-8 grid w-full max-w-xs gap-2">
         {isAdmin && (

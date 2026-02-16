@@ -183,7 +183,7 @@ export const QuizScreen = ({
               result={results[question.id]}
               theme={theme}
               imageOverride={uploadedImages[question.id]}
-              allowImageUpload={!isResponderMode}
+              allowImageUpload={!isResponderMode && !isBlankMode}
               onAnswerChange={onAnswerChange}
               onImageUpload={onImageUpload}
             />
