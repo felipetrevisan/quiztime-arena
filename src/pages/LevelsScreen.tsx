@@ -1,5 +1,6 @@
 import type { Category, LevelRecord } from '@/types/quiz'
 import { motion } from 'motion/react'
+import type { MouseEvent } from 'react'
 import { useState } from 'react'
 
 interface LevelsScreenProps {
@@ -34,6 +35,14 @@ export const LevelsScreen = ({
   onToggleLevelPublished,
 }: LevelsScreenProps) => {
   const [feedback, setFeedback] = useState<string | null>(null)
+
+  const handleCardOpen = (event: MouseEvent<HTMLElement>, levelId: string) => {
+    const target = event.target as HTMLElement
+    if (target.closest('button, a, input, textarea, select, label, [role="button"]')) {
+      return
+    }
+    onSelectLevel(levelId)
+  }
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -80,14 +89,22 @@ export const LevelsScreen = ({
             const record = records[key]
 
             return (
-              <motion.button
+              <motion.article
                 key={level.id}
                 variants={{
                   hidden: { opacity: 0, y: 14 },
                   show: { opacity: 1, y: 0 },
                 }}
-                onClick={() => onSelectLevel(level.id)}
-                className="w-full rounded-2xl border border-white/25 bg-black/35 p-4 text-left transition hover:bg-black/45"
+                role="button"
+                tabIndex={0}
+                onClick={(event) => handleCardOpen(event, level.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onSelectLevel(level.id)
+                  }
+                }}
+                className="w-full cursor-pointer rounded-2xl border border-white/25 bg-black/35 p-4 text-left transition hover:bg-black/45"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -229,7 +246,7 @@ export const LevelsScreen = ({
                     </button>
                   </div>
                 </div>
-              </motion.button>
+              </motion.article>
             )
           })}
         </motion.div>
