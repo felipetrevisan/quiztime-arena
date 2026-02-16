@@ -123,15 +123,13 @@ export const RankingScreen = ({
         <h2 className="font-display text-lg font-bold uppercase tracking-[0.16em] text-white">
           {isPreviewMode ? 'Ranking do quiz' : 'Ranking'}
         </h2>
-        {!isPreviewMode && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
-          >
-            Voltar
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+        >
+          {isPreviewMode ? 'Home' : 'Voltar'}
+        </button>
       </div>
 
       <div className="mb-3 flex gap-2">
