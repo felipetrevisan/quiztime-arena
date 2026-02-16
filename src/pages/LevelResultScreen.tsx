@@ -40,9 +40,6 @@ export const LevelResultScreen = ({
         <h2 className="mt-2 font-display text-3xl font-black uppercase tracking-[0.18em] text-white">
           {score}/{total}
         </h2>
-        <p className="mt-2 max-w-xs text-sm text-white/85">
-          Nivel concluido com feedback travado e folha pronta para exportar.
-        </p>
       </div>
 
       <div className="mt-4 flex-1 space-y-2 overflow-auto pr-1">
