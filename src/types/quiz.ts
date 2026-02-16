@@ -16,6 +16,7 @@ export type AccessMode = 'admin' | 'responder' | 'ranking'
 export type ThemeId = 'neon-purple' | 'candy-pink' | 'ice-blue' | 'soft-bw'
 export type LevelMode = 'quiz' | 'blank'
 export type TimingMode = 'timeless' | 'speedrun'
+export type AnswerMode = 'text' | 'choices'
 
 export interface Question {
   id: string
@@ -23,6 +24,7 @@ export interface Question {
   imagePath: string
   acceptedAnswers: string[]
   correctAnswerDisplay: string
+  choiceOptions?: string[]
 }
 
 export interface Level {
@@ -31,6 +33,7 @@ export interface Level {
   description: string
   mode?: LevelMode
   timingMode?: TimingMode
+  answerMode?: AnswerMode
   isPublished?: boolean
   questions: Question[]
 }

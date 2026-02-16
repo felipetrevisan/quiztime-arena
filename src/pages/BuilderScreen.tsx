@@ -1,6 +1,13 @@
 import { BuilderPanel, type BuilderPanelSection } from '@/components/BuilderPanel'
 import { ConfigPanel } from '@/components/ConfigPanel'
-import type { Category, LevelMode, ThemeId, ThemeOption, TimingMode } from '@/types/quiz'
+import type {
+  AnswerMode,
+  Category,
+  LevelMode,
+  ThemeId,
+  ThemeOption,
+  TimingMode,
+} from '@/types/quiz'
 import type { ChangeEvent } from 'react'
 import { useState } from 'react'
 
@@ -23,6 +30,7 @@ interface BuilderScreenProps {
     levelDescription: string,
     mode: LevelMode,
     timingMode: TimingMode,
+    answerMode: AnswerMode,
   ) => void | Promise<void>
   onUpdateQuestion: (payload: {
     categoryId: string
@@ -32,6 +40,14 @@ interface BuilderScreenProps {
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => void | Promise<void>
+  onGenerateQuestionChoices: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    correctAnswerDisplay: string
+    acceptedAnswers: string[]
+  }) => Promise<string[] | null>
   onUploadQuestionImage: (payload: {
     categoryId: string
     levelId: string
@@ -61,6 +77,7 @@ export const BuilderScreen = ({
   onAddCategory,
   onAddLevel,
   onUpdateQuestion,
+  onGenerateQuestionChoices,
   onUploadQuestionImage,
   onBack,
 }: BuilderScreenProps) => {
@@ -125,6 +142,7 @@ export const BuilderScreen = ({
             onAddCategory={onAddCategory}
             onAddLevel={onAddLevel}
             onUpdateQuestion={onUpdateQuestion}
+            onGenerateQuestionChoices={onGenerateQuestionChoices}
             onUploadQuestionImage={onUploadQuestionImage}
           />
         )}

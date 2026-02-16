@@ -17,6 +17,7 @@ interface LevelRow {
   description: string
   mode: 'quiz' | 'blank' | null
   timing_mode: 'timeless' | 'speedrun' | null
+  answer_format: 'text' | 'choices' | null
   is_published: boolean | null
   position: number
   questions: QuestionRow[] | null
@@ -28,7 +29,16 @@ interface QuestionRow {
   image_path: string
   accepted_answers: string[] | null
   correct_answer_display: string
+  choice_options: string[] | null
   position: number
+}
+
+interface GenerateQuestionChoicesPayload {
+  categoryTitle: string
+  levelTitle: string
+  questionPrompt: string
+  correctAnswer: string
+  acceptedAnswers: string[]
 }
 
 interface RankingRow {
@@ -57,6 +67,7 @@ const toQuestion = (row: QuestionRow): Question => ({
   imagePath: row.image_path,
   acceptedAnswers: row.accepted_answers ?? [],
   correctAnswerDisplay: row.correct_answer_display,
+  choiceOptions: row.choice_options ?? [],
 })
 
 const toLevel = (row: LevelRow): Level => ({
@@ -65,6 +76,7 @@ const toLevel = (row: LevelRow): Level => ({
   description: row.description,
   mode: row.mode ?? 'quiz',
   timingMode: row.timing_mode ?? 'timeless',
+  answerMode: row.answer_format ?? 'text',
   isPublished: row.is_published ?? false,
   questions: (row.questions ?? [])
     .slice()
@@ -113,7 +125,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,choice_options,position))',
     )
     .order('position', { ascending: true })
 
@@ -141,6 +153,7 @@ const upsertQuestion = async (
       image_path: question.imagePath,
       accepted_answers: question.acceptedAnswers,
       correct_answer_display: question.correctAnswerDisplay,
+      choice_options: question.choiceOptions ?? [],
       position,
     },
     {
@@ -164,6 +177,7 @@ const upsertLevel = async (categoryId: string, level: Level, position: number): 
       description: level.description,
       mode: level.mode ?? 'quiz',
       timing_mode: level.timingMode ?? 'timeless',
+      answer_format: level.answerMode ?? 'text',
       is_published: level.isPublished ?? false,
       position,
     },
@@ -237,6 +251,33 @@ export const updateRemoteQuestionImage = async (
   if (error) {
     console.error('Erro ao atualizar imagem da pergunta', error)
   }
+}
+
+export const generateRemoteQuestionChoices = async (
+  payload: GenerateQuestionChoicesPayload,
+): Promise<string[] | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.functions.invoke<{
+    options?: unknown
+  }>('generate-question-options', {
+    body: payload,
+  })
+
+  if (error) {
+    console.error('Erro ao gerar opcoes com IA', error)
+    return null
+  }
+
+  const options = Array.isArray(data?.options)
+    ? data.options.filter((item): item is string => typeof item === 'string')
+    : []
+
+  if (options.length !== 4) {
+    return null
+  }
+
+  return options
 }
 
 export const fetchRemoteRankings = async (): Promise<RankingEntry[] | null> => {

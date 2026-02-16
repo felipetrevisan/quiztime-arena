@@ -15,6 +15,7 @@ function BuilderRoute() {
     handleAddCategory,
     handleAddLevel,
     handleBackgroundUpload,
+    handleGenerateQuestionChoices,
     handleQuestionImageUpload,
     handleUpdateQuestion,
     setConfig,
@@ -39,6 +40,7 @@ function BuilderRoute() {
       onAddCategory={handleAddCategory}
       onAddLevel={handleAddLevel}
       onUpdateQuestion={handleUpdateQuestion}
+      onGenerateQuestionChoices={handleGenerateQuestionChoices}
       onUploadQuestionImage={({ categoryId, levelId, questionId, file }) => {
         void handleQuestionImageUpload(questionId, file, { categoryId, levelId })
       }}

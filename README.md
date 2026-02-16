@@ -58,6 +58,7 @@ O app funciona sem backend, mas se voce configurar Supabase ele passa a salvar e
 - ranking
 - fotos/avatares (Storage)
 - sessao/login (Google)
+- geracao de alternativas coerentes com IA (modo multipla escolha)
 
 ### 1) Criar variaveis de ambiente
 
@@ -105,9 +106,28 @@ No painel do Supabase:
 1. `Authentication -> Providers -> Google` (habilitar e configurar client ID/secret).
 2. Em `URL Configuration`, adicionar sua URL local e de producao como redirect.
 
-Obs: TikTok nao e provider nativo no Supabase Auth. Para TikTok, use `OIDC` customizado.
+### 4) (Opcional) IA para gerar opcoes coerentes no modo multipla escolha
 
-### 4) Subir com fallback local
+Quando um nivel estiver em `Multipla escolha (4 opcoes)`, voce pode usar o botao `Gerar opcoes com IA` no Builder.
+
+Para isso, publique a Edge Function:
+
+```bash
+supabase functions deploy generate-question-options
+```
+
+E configure os secrets no Supabase:
+
+```bash
+supabase secrets set OPENAI_API_KEY=sk-...
+supabase secrets set OPENAI_MODEL=gpt-4o-mini
+```
+
+Arquivo da funcao:
+
+- `supabase/functions/generate-question-options/index.ts`
+
+### 5) Subir com fallback local
 
 - Se as variaveis de Supabase estiverem definidas: usa banco/storage remoto.
 - Se nao estiverem: continua usando localStorage.

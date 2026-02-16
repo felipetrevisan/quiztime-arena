@@ -19,6 +19,7 @@ create table if not exists public.levels (
   description text not null,
   mode text not null default 'quiz' check (mode in ('quiz', 'blank')),
   timing_mode text not null default 'timeless' check (timing_mode in ('timeless', 'speedrun')),
+  answer_format text not null default 'text' check (answer_format in ('text', 'choices')),
   is_published boolean not null default false,
   position integer not null default 0,
   created_at timestamptz not null default now(),
@@ -32,6 +33,7 @@ create table if not exists public.questions (
   image_path text not null,
   accepted_answers text[] not null default '{}',
   correct_answer_display text not null default '',
+  choice_options text[] not null default '{}',
   position integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -62,7 +64,13 @@ alter table public.levels
   add column if not exists timing_mode text not null default 'timeless';
 
 alter table public.levels
+  add column if not exists answer_format text not null default 'text';
+
+alter table public.levels
   add column if not exists is_published boolean not null default false;
+
+alter table public.questions
+  add column if not exists choice_options text[] not null default '{}';
 
 alter table public.rankings
   add column if not exists points integer not null default 0;
@@ -172,6 +180,7 @@ drop policy if exists "authenticated read rankings" on public.rankings;
 drop policy if exists "public read rankings" on public.rankings;
 create policy "authenticated read rankings" on public.rankings
 for select using (public.is_authenticated());
+drop policy if exists "authenticated insert rankings" on public.rankings;
 drop policy if exists "admin write rankings" on public.rankings;
 drop policy if exists "public write rankings" on public.rankings;
 create policy "authenticated insert rankings" on public.rankings

@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react'
 
 import type {
   AccessMode,
+  AnswerMode,
   AppConfig,
   Category,
   Level,
@@ -86,6 +87,7 @@ export interface QuizAppContextValue {
     levelDescription: string,
     mode: LevelMode,
     timingMode: TimingMode,
+    answerMode: AnswerMode,
   ) => void
   handleDeleteLevel: (categoryId: string, levelId: string) => Promise<boolean>
   handleToggleLevelPublished: (
@@ -101,6 +103,14 @@ export interface QuizAppContextValue {
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => Promise<void>
+  handleGenerateQuestionChoices: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    correctAnswerDisplay: string
+    acceptedAnswers: string[]
+  }) => Promise<string[] | null>
   handleGenerateShareLink: (levelId: string) => Promise<void>
   handleCopyShareLink: (levelId: string) => Promise<void>
   handleShareRankingPreview: (levelId: string) => Promise<void>

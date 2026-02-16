@@ -92,6 +92,18 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     goRespondResult,
   } = params
 
+  const getCorrectOption = (question: Level['questions'][number]): string => {
+    if (question.correctAnswerDisplay.trim()) {
+      return question.correctAnswerDisplay.trim()
+    }
+
+    if (question.acceptedAnswers[0]?.trim()) {
+      return question.acceptedAnswers[0].trim()
+    }
+
+    return ''
+  }
+
   const resetQuizBuffers = () => {
     revokeBlobUrls(uploadedImages)
     setAnswers({})
@@ -183,6 +195,14 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     const evaluation: Record<string, boolean> = {}
 
     for (const question of activeLevel.questions) {
+      if (activeLevel.answerMode === 'choices' && activeLevel.mode !== 'blank') {
+        const correctOption = getCorrectOption(question)
+        evaluation[question.id] = Boolean(
+          correctOption && isAnswerCorrect(answers[question.id] ?? '', [correctOption]),
+        )
+        continue
+      }
+
       const acceptedAnswers =
         question.acceptedAnswers.length > 0
           ? question.acceptedAnswers

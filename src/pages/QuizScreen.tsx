@@ -1,9 +1,10 @@
 import { ProgressBar } from '@/components/ProgressBar'
 import { QuestionRow } from '@/components/QuestionRow'
-import type { Level, ThemeOption, TimingMode } from '@/types/quiz'
+import type { Level, Question, ThemeOption, TimingMode } from '@/types/quiz'
 import { motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { normalizeAnswer } from '@/utils/normalize'
 import { formatDuration } from '@/utils/scoring'
 
 interface QuizScreenProps {
@@ -26,6 +27,109 @@ interface QuizScreenProps {
   onCorrect: () => void
   onFinishLevel: () => void
   onTakeScreenshot?: () => Promise<void>
+}
+
+const fallbackWrongOptions = [
+  'Arvore magica',
+  'Planeta zeta',
+  'Capitao turbo',
+  'Cidade neon',
+  'Projeto omega',
+  'Cometa azul',
+  'Ilha secreta',
+  'Operacao fox',
+]
+
+const shuffle = <T,>(items: T[]): T[] => {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = next[i]
+    next[i] = next[j]
+    next[j] = tmp
+  }
+  return next
+}
+
+const getCorrectOption = (question: Question): string => {
+  if (question.correctAnswerDisplay.trim()) {
+    return question.correctAnswerDisplay.trim()
+  }
+  if (question.acceptedAnswers[0]?.trim()) {
+    return question.acceptedAnswers[0].trim()
+  }
+  return 'Resposta correta'
+}
+
+const uniqueByNormalized = (items: string[]): string[] => {
+  const seen = new Set<string>()
+  const next: string[] = []
+
+  for (const item of items) {
+    const key = normalizeAnswer(item)
+    if (!key || seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    next.push(item)
+  }
+
+  return next
+}
+
+const buildChoiceOptionsMap = (level: Level): Record<string, string[]> => {
+  const answerPool = level.questions.map((question) => getCorrectOption(question))
+
+  return Object.fromEntries(
+    level.questions.map((question) => {
+      const correct = getCorrectOption(question)
+      const normalizedCorrect = normalizeAnswer(correct)
+      const providedOptions = uniqueByNormalized(
+        (question.choiceOptions ?? []).map((option) => option.trim()).filter(Boolean),
+      )
+      const providedWrong = providedOptions
+        .filter((option) => normalizeAnswer(option) !== normalizedCorrect)
+        .slice(0, 3)
+
+      if (providedWrong.length === 3) {
+        return [question.id, shuffle([correct, ...providedWrong])]
+      }
+
+      const wrongCandidates = answerPool.filter(
+        (item) => normalizeAnswer(item) !== normalizedCorrect,
+      )
+      const uniqueWrong = uniqueByNormalized(wrongCandidates)
+      const selectedWrong = shuffle(uniqueWrong).slice(0, 3)
+
+      for (const fallback of fallbackWrongOptions) {
+        if (selectedWrong.length >= 3) {
+          break
+        }
+        const normalizedFallback = normalizeAnswer(fallback)
+        const exists = selectedWrong.some(
+          (candidate) => normalizeAnswer(candidate) === normalizedFallback,
+        )
+        if (normalizedFallback !== normalizedCorrect && !exists) {
+          selectedWrong.push(fallback)
+        }
+      }
+
+      let optionIndex = 1
+      while (selectedWrong.length < 3) {
+        const fallback = `Opcao ${optionIndex}`
+        optionIndex += 1
+        const normalizedFallback = normalizeAnswer(fallback)
+        if (
+          normalizedFallback !== normalizedCorrect &&
+          !selectedWrong.some((candidate) => normalizeAnswer(candidate) === normalizedFallback)
+        ) {
+          selectedWrong.push(fallback)
+        }
+      }
+
+      return [question.id, shuffle([correct, ...selectedWrong.slice(0, 3)])]
+    }),
+  )
 }
 
 export const QuizScreen = ({
@@ -58,6 +162,11 @@ export const QuizScreen = ({
   const progress = corrected ? 100 : (answeredCount / total) * 100
   const currentQuestion = Math.min(answeredCount + 1, total)
   const isSpeedrun = timingMode === 'speedrun'
+  const isChoiceMode = level.answerMode === 'choices' && !isBlankMode
+  const choiceOptionsMap = useMemo(
+    () => (isChoiceMode ? buildChoiceOptionsMap(level) : {}),
+    [isChoiceMode, level],
+  )
 
   useEffect(() => {
     setElapsedMs(0)
@@ -177,6 +286,8 @@ export const QuizScreen = ({
               index={index}
               question={question}
               isBlankMode={isBlankMode}
+              answerMode={isChoiceMode ? 'choices' : 'text'}
+              choiceOptions={choiceOptionsMap[question.id] ?? []}
               showOptionImage={isBlankMode}
               answer={answers[question.id] ?? ''}
               corrected={corrected}

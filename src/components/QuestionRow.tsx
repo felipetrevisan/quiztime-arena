@@ -1,4 +1,4 @@
-import type { Question, ThemeOption } from '@/types/quiz'
+import type { AnswerMode, Question, ThemeOption } from '@/types/quiz'
 import { AnimatePresence, motion } from 'motion/react'
 import { useId, useState } from 'react'
 
@@ -6,6 +6,8 @@ interface QuestionRowProps {
   index: number
   question: Question
   isBlankMode?: boolean
+  answerMode?: AnswerMode
+  choiceOptions?: string[]
   showOptionImage?: boolean
   answer: string
   corrected: boolean
@@ -21,6 +23,8 @@ export const QuestionRow = ({
   index,
   question,
   isBlankMode = false,
+  answerMode = 'text',
+  choiceOptions = [],
   showOptionImage = true,
   answer,
   corrected,
@@ -33,6 +37,7 @@ export const QuestionRow = ({
 }: QuestionRowProps) => {
   const [showCorrect, setShowCorrect] = useState(false)
   const inputId = useId()
+  const isChoiceMode = answerMode === 'choices' && !isBlankMode && choiceOptions.length > 0
 
   return (
     <motion.article
@@ -87,15 +92,43 @@ export const QuestionRow = ({
             </label>
           )}
 
-          <input
-            id={inputId}
-            type="text"
-            value={answer}
-            onChange={(event) => onAnswerChange(question.id, event.target.value)}
-            readOnly={corrected}
-            placeholder={isBlankMode ? 'Digite a resposta da alternativa' : 'Digite sua resposta'}
-            className="w-full rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-sm outline-none transition placeholder:text-white/50 focus:border-white"
-          />
+          {isChoiceMode ? (
+            <div
+              role="radiogroup"
+              aria-label={`Alternativas da pergunta ${index + 1}`}
+              className="space-y-2"
+            >
+              {choiceOptions.map((option, optionIndex) => {
+                const selected = answer === option
+
+                return (
+                  <button
+                    key={`${question.id}:option:${optionIndex}`}
+                    type="button"
+                    onClick={() => onAnswerChange(question.id, option)}
+                    disabled={corrected}
+                    className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
+                      selected
+                        ? 'border-cyan-300/60 bg-cyan-500/20 text-cyan-100'
+                        : 'border-white/30 bg-black/25 text-white'
+                    } ${corrected ? 'cursor-default' : 'hover:border-white/60'}`}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <input
+              id={inputId}
+              type="text"
+              value={answer}
+              onChange={(event) => onAnswerChange(question.id, event.target.value)}
+              readOnly={corrected}
+              placeholder={isBlankMode ? 'Digite a resposta da alternativa' : 'Digite sua resposta'}
+              className="w-full rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-sm outline-none transition placeholder:text-white/50 focus:border-white"
+            />
+          )}
 
           {corrected && !isBlankMode && question.correctAnswerDisplay && (
             <button
