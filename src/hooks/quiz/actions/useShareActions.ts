@@ -98,6 +98,11 @@ export const useShareActions = (params: UseShareActionsParams) => {
       ...previous,
       [key]: rankingPreviewLink,
     }))
+    setShortLinks((previous) => {
+      const next = { ...previous }
+      delete next[key]
+      return next
+    })
 
     void copyText(shareLink)
   }
