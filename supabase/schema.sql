@@ -34,6 +34,7 @@ create table if not exists public.questions (
   accepted_answers text[] not null default '{}',
   correct_answer_display text not null default '',
   choice_options text[] not null default '{}',
+  correct_index integer not null default 0 check (correct_index between 0 and 3),
   position integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -71,6 +72,9 @@ alter table public.levels
 
 alter table public.questions
   add column if not exists choice_options text[] not null default '{}';
+
+alter table public.questions
+  add column if not exists correct_index integer not null default 0;
 
 alter table public.rankings
   add column if not exists points integer not null default 0;
