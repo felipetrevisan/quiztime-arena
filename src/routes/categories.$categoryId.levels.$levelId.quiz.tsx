@@ -21,6 +21,7 @@ function QuizRoute() {
     goCategories,
     goHome,
     goLevels,
+    goPlay,
     handleCorrect,
     handleFinishLevel,
     handleQuestionImageUpload,
@@ -33,7 +34,9 @@ function QuizRoute() {
     selectedCategory,
     selectedCategoryId,
     selectedLevelId,
+    setSharedQuiz,
     setResponderName,
+    sharedQuiz,
     updateAnswer,
     uploadedImages,
   } = useQuizApp()
@@ -41,6 +44,7 @@ function QuizRoute() {
   const routeCategory = categories.find((category) => category.id === categoryId) ?? null
   const routeLevel = routeCategory?.levels.find((level) => level.id === levelId) ?? null
   const levelToRender = isResponderMode ? activeLevel : (routeLevel ?? activeLevel)
+  const isPublishedPlayMode = Boolean(sharedQuiz?.quizId.startsWith('published-'))
 
   useEffect(() => {
     if (accessMode !== 'admin') {
@@ -103,6 +107,12 @@ function QuizRoute() {
       uploadedImages={uploadedImages}
       onBack={() => {
         if (isResponderMode) {
+          if (isPublishedPlayMode) {
+            setSharedQuiz(null)
+            goPlay()
+            return
+          }
+
           goHome()
           return
         }
@@ -121,6 +131,8 @@ function QuizRoute() {
       }}
       onResponderNameChange={setResponderName}
       onResponderAvatarUpload={handleResponderAvatarUpload}
+      showResponderExit={isPublishedPlayMode}
+      backButtonLabel={isPublishedPlayMode ? 'Sair e continuar depois' : 'Sair'}
       onAnswerChange={updateAnswer}
       onImageUpload={(questionId, file) => {
         void handleQuestionImageUpload(questionId, file)

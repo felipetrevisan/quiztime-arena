@@ -249,6 +249,7 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
 
   usePersistQuizDraft({
     isResponderMode,
+    sharedQuiz,
     screen,
     selectedCategory,
     selectedLevel,

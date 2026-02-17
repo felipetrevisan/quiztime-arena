@@ -392,6 +392,7 @@ export const useResponderProfileSeed = (params: {
 
 export const usePersistQuizDraft = (params: {
   isResponderMode: boolean
+  sharedQuiz: ShareQuizPayload | null
   screen: string
   selectedCategory: Category | null
   selectedLevel: Level | null
@@ -402,6 +403,7 @@ export const usePersistQuizDraft = (params: {
 }) => {
   const {
     isResponderMode,
+    sharedQuiz,
     screen,
     selectedCategory,
     selectedLevel,
@@ -412,7 +414,16 @@ export const usePersistQuizDraft = (params: {
   } = params
 
   useEffect(() => {
-    if (isResponderMode || screen !== 'quiz' || !selectedCategory || !selectedLevel) {
+    const isPublishedResponderQuiz = Boolean(
+      isResponderMode && sharedQuiz?.quizId.startsWith('published-'),
+    )
+
+    if (
+      (!isPublishedResponderQuiz && isResponderMode) ||
+      screen !== 'quiz' ||
+      !selectedCategory ||
+      !selectedLevel
+    ) {
       return
     }
 
@@ -434,6 +445,7 @@ export const usePersistQuizDraft = (params: {
     selectedCategory,
     selectedLevel,
     setDrafts,
+    sharedQuiz,
   ])
 }
 

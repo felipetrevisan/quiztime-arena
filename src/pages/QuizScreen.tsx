@@ -22,6 +22,8 @@ interface QuizScreenProps {
   onBack: () => void
   onResponderNameChange?: (value: string) => void
   onResponderAvatarUpload?: (file: File) => void
+  showResponderExit?: boolean
+  backButtonLabel?: string
   onAnswerChange: (questionId: string, value: string) => void
   onImageUpload: (questionId: string, file: File) => void
   onCorrect: () => void
@@ -147,6 +149,8 @@ export const QuizScreen = ({
   onBack,
   onResponderNameChange,
   onResponderAvatarUpload,
+  showResponderExit = false,
+  backButtonLabel,
   onAnswerChange,
   onImageUpload,
   onCorrect,
@@ -214,13 +218,13 @@ export const QuizScreen = ({
             {isSpeedrun ? `Speed Run • ${formatDuration(elapsedMs)}` : 'Timeless'}
           </p>
         </div>
-        {!isResponderMode && (
+        {(!isResponderMode || showResponderExit) && (
           <button
             type="button"
             onClick={onBack}
             className="rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
           >
-            Voltar
+            {backButtonLabel ?? (isResponderMode ? 'Sair' : 'Voltar')}
           </button>
         )}
       </div>

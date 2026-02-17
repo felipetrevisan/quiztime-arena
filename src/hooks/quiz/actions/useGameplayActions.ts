@@ -184,6 +184,14 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
     setSelectedCategoryId(category.id)
     setSelectedLevelId(level.id)
     setQuizStartedAtMs(Date.now())
+
+    const draft = drafts[levelKey(category.id, level.id)]
+    if (draft) {
+      setAnswers(draft.answers)
+      setResults(draft.results)
+      setCorrected(draft.corrected)
+    }
+
     goQuiz(category.id, level.id)
   }
 
@@ -242,6 +250,15 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
         : score
 
     if (isResponderMode) {
+      if (selectedCategory) {
+        const key = levelKey(selectedCategory.id, activeLevel.id)
+        setDrafts((previous) => {
+          const next = { ...previous }
+          delete next[key]
+          return next
+        })
+      }
+
       setSharedResult({
         score,
         total: activeLevel.questions.length,
