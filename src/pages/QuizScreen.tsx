@@ -44,16 +44,30 @@ const fallbackWrongOptions = [
 
 const shuffle = <T,>(items: T[]): T[] => {
   const next = [...items]
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const tmp = next[i]
-    next[i] = next[j]
-    next[j] = tmp
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = next[index]
+    next[index] = next[swapIndex]
+    next[swapIndex] = current
   }
   return next
 }
 
 const getCorrectOption = (question: Question): string => {
+  const options = Array.isArray(question.options) ? question.options : []
+  if (options.length > 0) {
+    const safeIndex =
+      typeof question.correctIndex === 'number' &&
+      question.correctIndex >= 0 &&
+      question.correctIndex < options.length
+        ? question.correctIndex
+        : 0
+    const byIndex = options[safeIndex]?.trim()
+    if (byIndex) {
+      return byIndex
+    }
+  }
+
   if (question.correctAnswerDisplay.trim()) {
     return question.correctAnswerDisplay.trim()
   }
@@ -84,19 +98,14 @@ const buildChoiceOptionsMap = (level: Level): Record<string, string[]> => {
 
   return Object.fromEntries(
     level.questions.map((question) => {
-      const correct = getCorrectOption(question)
-      const normalizedCorrect = normalizeAnswer(correct)
-      const providedOptions = uniqueByNormalized(
-        (question.choiceOptions ?? []).map((option) => option.trim()).filter(Boolean),
-      )
-      const providedWrong = providedOptions
-        .filter((option) => normalizeAnswer(option) !== normalizedCorrect)
-        .slice(0, 3)
-
-      if (providedWrong.length === 3) {
-        return [question.id, shuffle([correct, ...providedWrong])]
+      const baseOptions = Array.isArray(question.options) ? question.options : []
+      const sanitizedOptions = baseOptions.map((option) => option.trim()).filter(Boolean)
+      if (sanitizedOptions.length === 4) {
+        return [question.id, sanitizedOptions]
       }
 
+      const correct = getCorrectOption(question)
+      const normalizedCorrect = normalizeAnswer(correct)
       const wrongCandidates = answerPool.filter(
         (item) => normalizeAnswer(item) !== normalizedCorrect,
       )
@@ -129,7 +138,7 @@ const buildChoiceOptionsMap = (level: Level): Record<string, string[]> => {
         }
       }
 
-      return [question.id, shuffle([correct, ...selectedWrong.slice(0, 3)])]
+      return [question.id, [correct, ...selectedWrong.slice(0, 3)]]
     }),
   )
 }
@@ -159,22 +168,39 @@ export const QuizScreen = ({
 }: QuizScreenProps) => {
   const [isCapturing, setIsCapturing] = useState(false)
   const [elapsedMs, setElapsedMs] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const total = level.questions.length
   const answeredCount = level.questions.filter((question) =>
     Boolean(answers[question.id]?.trim()),
   ).length
-  const progress = corrected ? 100 : (answeredCount / total) * 100
-  const currentQuestion = Math.min(answeredCount + 1, total)
   const isSpeedrun = timingMode === 'speedrun'
   const isChoiceMode = level.answerMode === 'choices' && !isBlankMode
+  const currentQuestion = isChoiceMode
+    ? Math.min(currentQuestionIndex + 1, total)
+    : Math.min(answeredCount + 1, total)
+  const progress = corrected
+    ? total > 0
+      ? 100
+      : 0
+    : isChoiceMode
+      ? total > 0
+        ? (currentQuestion / total) * 100
+        : 0
+      : total > 0
+        ? (answeredCount / total) * 100
+        : 0
   const choiceOptionsMap = useMemo(
     () => (isChoiceMode ? buildChoiceOptionsMap(level) : {}),
     [isChoiceMode, level],
   )
+  const visibleQuestions = isChoiceMode
+    ? [level.questions[currentQuestionIndex]].filter(Boolean)
+    : level.questions
 
   useEffect(() => {
     setElapsedMs(0)
-  }, [])
+    setCurrentQuestionIndex(0)
+  }, [level.id])
 
   useEffect(() => {
     if (!isSpeedrun || corrected) {
@@ -284,10 +310,10 @@ export const QuizScreen = ({
             },
           }}
         >
-          {level.questions.map((question, index) => (
+          {visibleQuestions.map((question, index) => (
             <QuestionRow
               key={question.id}
-              index={index}
+              index={isChoiceMode ? currentQuestionIndex : index}
               question={question}
               isBlankMode={isBlankMode}
               answerMode={isChoiceMode ? 'choices' : 'text'}
@@ -309,6 +335,16 @@ export const QuizScreen = ({
       <div className="mt-3 flex gap-2">
         {!corrected ? (
           <>
+            {isChoiceMode && (
+              <button
+                type="button"
+                onClick={() => setCurrentQuestionIndex((previous) => Math.max(0, previous - 1))}
+                disabled={currentQuestionIndex === 0}
+                className="rounded-xl border border-white/30 bg-black/35 px-3 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+            )}
             {isResponderMode && onTakeScreenshot && (
               <button
                 type="button"
@@ -322,14 +358,30 @@ export const QuizScreen = ({
 
             <button
               type="button"
-              onClick={onCorrect}
+              onClick={() => {
+                if (isChoiceMode && currentQuestionIndex < total - 1) {
+                  setCurrentQuestionIndex((previous) => previous + 1)
+                  return
+                }
+
+                onCorrect()
+              }}
+              disabled={
+                isChoiceMode &&
+                currentQuestionIndex < total - 1 &&
+                !answers[level.questions[currentQuestionIndex]?.id ?? '']?.trim()
+              }
               className="flex-1 rounded-xl border border-white/25 bg-white/90 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-900"
             >
-              {isResponderMode
-                ? 'Enviar respostas'
-                : isBlankMode
-                  ? 'Finalizar respostas'
-                  : 'Corrigir'}
+              {isChoiceMode
+                ? currentQuestionIndex < total - 1
+                  ? 'Proxima'
+                  : 'Finalizar nivel'
+                : isResponderMode
+                  ? 'Enviar respostas'
+                  : isBlankMode
+                    ? 'Finalizar respostas'
+                    : 'Corrigir'}
             </button>
           </>
         ) : (

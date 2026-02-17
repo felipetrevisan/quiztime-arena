@@ -30,6 +30,7 @@ interface QuestionRow {
   accepted_answers: string[] | null
   correct_answer_display: string
   choice_options: string[] | null
+  correct_index: number | null
   position: number
 }
 
@@ -61,14 +62,32 @@ interface RankingRow {
   submitted_at: string
 }
 
-const toQuestion = (row: QuestionRow): Question => ({
-  id: row.id,
-  prompt: row.prompt,
-  imagePath: row.image_path,
-  acceptedAnswers: row.accepted_answers ?? [],
-  correctAnswerDisplay: row.correct_answer_display,
-  choiceOptions: row.choice_options ?? [],
-})
+const toQuestion = (row: QuestionRow): Question => {
+  const options = (row.choice_options ?? []).slice(0, 4)
+  while (options.length < 4) {
+    options.push(`Opcao ${options.length + 1}`)
+  }
+
+  const safeCorrectIndex =
+    typeof row.correct_index === 'number' && row.correct_index >= 0 && row.correct_index < 4
+      ? row.correct_index
+      : 0
+
+  if (!options[safeCorrectIndex]?.trim() && row.correct_answer_display.trim()) {
+    options[safeCorrectIndex] = row.correct_answer_display.trim()
+  }
+
+  return {
+    id: row.id,
+    question: row.prompt,
+    prompt: row.prompt,
+    imagePath: row.image_path,
+    options,
+    correctIndex: safeCorrectIndex,
+    acceptedAnswers: row.accepted_answers ?? [],
+    correctAnswerDisplay: row.correct_answer_display,
+  }
+}
 
 const toLevel = (row: LevelRow): Level => ({
   id: row.id,
@@ -125,7 +144,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,choice_options,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,choice_options,correct_index,position))',
     )
     .order('position', { ascending: true })
 
@@ -149,11 +168,12 @@ const upsertQuestion = async (
     {
       id: question.id,
       level_id: levelId,
-      prompt: question.prompt,
+      prompt: question.question || question.prompt,
       image_path: question.imagePath,
       accepted_answers: question.acceptedAnswers,
       correct_answer_display: question.correctAnswerDisplay,
-      choice_options: question.choiceOptions ?? [],
+      choice_options: question.options ?? [],
+      correct_index: question.correctIndex ?? 0,
       position,
     },
     {

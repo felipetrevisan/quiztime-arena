@@ -93,6 +93,18 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
   } = params
 
   const getCorrectOption = (question: Level['questions'][number]): string => {
+    const options = Array.isArray(question.options) ? question.options : []
+    if (options.length > 0) {
+      const safeIndex =
+        question.correctIndex >= 0 && question.correctIndex < options.length
+          ? question.correctIndex
+          : 0
+      const byIndex = options[safeIndex]?.trim()
+      if (byIndex) {
+        return byIndex
+      }
+    }
+
     if (question.correctAnswerDisplay.trim()) {
       return question.correctAnswerDisplay.trim()
     }

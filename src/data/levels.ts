@@ -6,7 +6,18 @@ const q = (
   imagePath: string,
   acceptedAnswers: string[],
   correctAnswerDisplay: string,
-): Question => ({ id, prompt, imagePath, acceptedAnswers, correctAnswerDisplay })
+  options?: string[],
+  correctIndex = 0,
+): Question => ({
+  id,
+  question: prompt,
+  prompt,
+  imagePath,
+  options: options ?? [correctAnswerDisplay, 'Opcao B', 'Opcao C', 'Opcao D'],
+  correctIndex,
+  acceptedAnswers,
+  correctAnswerDisplay,
+})
 
 export const initialCategories: Category[] = [
   {

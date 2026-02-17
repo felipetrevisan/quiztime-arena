@@ -27,6 +27,55 @@ interface PathState {
   levelId?: string
 }
 
+const normalizeSharedLevel = (level: Level): Level => {
+  const questions = Array.isArray(level.questions) ? level.questions : []
+
+  return {
+    ...level,
+    mode: level.mode ?? 'quiz',
+    timingMode: level.timingMode ?? 'timeless',
+    answerMode: level.answerMode ?? 'text',
+    questions: questions.map((question) => {
+      const options = Array.isArray(question.options) ? [...question.options] : []
+      const sourceAcceptedAnswers = Array.isArray(question.acceptedAnswers)
+        ? question.acceptedAnswers
+        : []
+      const sourceCorrectAnswerDisplay =
+        typeof question.correctAnswerDisplay === 'string' ? question.correctAnswerDisplay : ''
+      while (options.length < 4) {
+        options.push(`Opcao ${options.length + 1}`)
+      }
+
+      const safeCorrectIndex =
+        typeof question.correctIndex === 'number' &&
+        question.correctIndex >= 0 &&
+        question.correctIndex < 4
+          ? question.correctIndex
+          : 0
+
+      const prompt = question.question || question.prompt || ''
+      const correctAnswerDisplay =
+        sourceCorrectAnswerDisplay.trim() || options[safeCorrectIndex] || ''
+      const acceptedAnswers =
+        sourceAcceptedAnswers.length > 0
+          ? sourceAcceptedAnswers
+          : correctAnswerDisplay
+            ? [correctAnswerDisplay]
+            : []
+
+      return {
+        ...question,
+        question: prompt,
+        prompt,
+        options: options.slice(0, 4),
+        correctIndex: safeCorrectIndex,
+        acceptedAnswers,
+        correctAnswerDisplay,
+      }
+    }),
+  }
+}
+
 export const useSyncRouteSelection = (params: {
   pathState: PathState
   selectedCategoryId: string
@@ -271,12 +320,10 @@ export const useAccessAndSharedQuery = (params: {
     if (respondParam) {
       const payload = decodePayload<ShareQuizPayload>(respondParam)
       if (payload?.version === 1) {
+        const normalizedLevel = normalizeSharedLevel(payload.level)
         setSharedQuiz({
           ...payload,
-          level: {
-            ...payload.level,
-            timingMode: payload.level.timingMode ?? 'timeless',
-          },
+          level: normalizedLevel,
         })
         setSelectedCategoryId(payload.categoryId)
         setSelectedLevelId(payload.levelId)

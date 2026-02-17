@@ -20,11 +20,13 @@ export type AnswerMode = 'text' | 'choices'
 
 export interface Question {
   id: string
+  question: string
   prompt: string
   imagePath: string
+  options: string[]
+  correctIndex: number
   acceptedAnswers: string[]
   correctAnswerDisplay: string
-  choiceOptions?: string[]
 }
 
 export interface Level {

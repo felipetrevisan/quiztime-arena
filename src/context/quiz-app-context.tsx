@@ -100,6 +100,9 @@ export interface QuizAppContextValue {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    options: string[]
+    correctIndex: number
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => Promise<void>

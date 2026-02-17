@@ -20,6 +20,9 @@ interface BuilderPanelProps {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    options: string[]
+    correctIndex: number
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => void | Promise<void>
@@ -73,6 +76,9 @@ export const BuilderPanel = ({
   const [questionLevelId, setQuestionLevelId] = useState(categories[0]?.levels[0]?.id ?? '')
   const [questionId, setQuestionId] = useState(categories[0]?.levels[0]?.questions[0]?.id ?? '')
   const [questionPrompt, setQuestionPrompt] = useState('')
+  const [questionImagePath, setQuestionImagePath] = useState('')
+  const [optionInputs, setOptionInputs] = useState<string[]>(['', '', '', ''])
+  const [correctIndex, setCorrectIndex] = useState(0)
   const [correctAnswerDisplay, setCorrectAnswerDisplay] = useState('')
   const [acceptedAnswersInput, setAcceptedAnswersInput] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -148,12 +154,28 @@ export const BuilderPanel = ({
   useEffect(() => {
     if (!selectedQuestion) {
       setQuestionPrompt('')
+      setQuestionImagePath('')
+      setOptionInputs(['', '', '', ''])
+      setCorrectIndex(0)
       setCorrectAnswerDisplay('')
       setAcceptedAnswersInput('')
       return
     }
 
-    setQuestionPrompt(selectedQuestion.prompt)
+    setQuestionPrompt(selectedQuestion.question || selectedQuestion.prompt)
+    setQuestionImagePath(selectedQuestion.imagePath)
+    const safeOptions = Array.isArray(selectedQuestion.options)
+      ? [...selectedQuestion.options]
+      : []
+    while (safeOptions.length < 4) {
+      safeOptions.push('')
+    }
+    setOptionInputs(safeOptions.slice(0, 4))
+    setCorrectIndex(
+      selectedQuestion.correctIndex >= 0 && selectedQuestion.correctIndex < 4
+        ? selectedQuestion.correctIndex
+        : 0,
+    )
     setCorrectAnswerDisplay(selectedQuestion.correctAnswerDisplay)
     setAcceptedAnswersInput(selectedQuestion.acceptedAnswers.join(', '))
   }, [selectedQuestion])
@@ -358,6 +380,90 @@ export const BuilderPanel = ({
             placeholder="Texto da pergunta (opcional no modo em branco)"
             className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
+          <div className="rounded-lg border border-white/15 bg-black/25 p-2">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75">
+              Imagem da pergunta
+            </p>
+            {selectedQuestion && (
+              <img
+                src={questionImagePath || selectedQuestion.imagePath}
+                alt="Preview da pergunta"
+                className="mb-2 h-20 w-full rounded-xl border border-white/25 object-cover"
+              />
+            )}
+            <input
+              value={questionImagePath}
+              onChange={(event) => setQuestionImagePath(event.target.value)}
+              placeholder="/assets/cartoons/exemplo.svg"
+              className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+            />
+            <p className="mt-1 text-[10px] text-white/65">
+              Informe o path local em /public/assets ou use upload abaixo.
+            </p>
+            <label className="mt-2 block cursor-pointer rounded-lg border border-white/30 bg-black/35 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+              Upload imagem
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0]
+                  if (!file || !questionCategoryId || !questionLevelId || !questionId) return
+                  await onUploadQuestionImage({
+                    categoryId: questionCategoryId,
+                    levelId: questionLevelId,
+                    questionId,
+                    file,
+                  })
+                  setFeedback('Imagem enviada com sucesso.')
+                  event.target.value = ''
+                }}
+              />
+            </label>
+          </div>
+          {selectedLevel?.answerMode === 'choices' && selectedLevel?.mode !== 'blank' && (
+            <div className="space-y-2 rounded-lg border border-cyan-300/25 bg-cyan-500/10 p-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100/90">
+                Opcoes da multipla escolha (4)
+              </p>
+              {optionInputs.map((option, optionIndex) => (
+                <input
+                  key={`builder-option:${optionIndex}`}
+                  value={option}
+                  onChange={(event) => {
+                    setOptionInputs((previous) => {
+                      const next = [...previous]
+                      next[optionIndex] = event.target.value
+                      return next
+                    })
+                  }}
+                  placeholder={`Opcao ${optionIndex + 1}`}
+                  className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+                />
+              ))}
+              <label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100/90">
+                Indice da correta
+              </label>
+              <select
+                value={correctIndex}
+                onChange={(event) => setCorrectIndex(Number(event.target.value))}
+                className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+              >
+                <option value={0} className="bg-slate-900">
+                  Opcao 1
+                </option>
+                <option value={1} className="bg-slate-900">
+                  Opcao 2
+                </option>
+                <option value={2} className="bg-slate-900">
+                  Opcao 3
+                </option>
+                <option value={3} className="bg-slate-900">
+                  Opcao 4
+                </option>
+              </select>
+            </div>
+          )}
           <input
             value={correctAnswerDisplay}
             onChange={(event) => setCorrectAnswerDisplay(event.target.value)}
@@ -376,8 +482,11 @@ export const BuilderPanel = ({
             onClick={async () => {
               if (!questionCategoryId || !questionLevelId || !questionId) return
 
+              const normalizedOptions = optionInputs.map((item) => item.trim())
+              const resolvedCorrectFromOptions =
+                selectedLevel?.answerMode === 'choices' ? normalizedOptions[correctIndex] ?? '' : ''
               const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
-              const correct = correctAnswerDisplay.trim()
+              const correct = (resolvedCorrectFromOptions || correctAnswerDisplay).trim()
               const hasCorrectAlready = acceptedAnswers.some(
                 (item) => item.toLowerCase() === correct.toLowerCase(),
               )
@@ -386,11 +495,23 @@ export const BuilderPanel = ({
                 acceptedAnswers.unshift(correct)
               }
 
+              const hasAllOptions =
+                selectedLevel?.answerMode !== 'choices' ||
+                normalizedOptions.every((option) => option.length > 0)
+
+              if (!hasAllOptions) {
+                setFeedback('Preencha as 4 opcoes da multipla escolha.')
+                return
+              }
+
               await onUpdateQuestion({
                 categoryId: questionCategoryId,
                 levelId: questionLevelId,
                 questionId,
                 prompt: questionPrompt.trim(),
+                imagePath: questionImagePath.trim() || selectedQuestion?.imagePath || '',
+                options: normalizedOptions,
+                correctIndex,
                 correctAnswerDisplay: correct,
                 acceptedAnswers,
               })
@@ -414,8 +535,10 @@ export const BuilderPanel = ({
                   onClick={async () => {
                     if (!questionCategoryId || !questionLevelId || !questionId) return
 
+                    const normalizedOptions = optionInputs.map((item) => item.trim())
+                    const resolvedCorrectFromOptions = normalizedOptions[correctIndex] ?? ''
                     const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
-                    const correct = correctAnswerDisplay.trim()
+                    const correct = (resolvedCorrectFromOptions || correctAnswerDisplay).trim()
                     const hasCorrectAlready = acceptedAnswers.some(
                       (item) => item.toLowerCase() === correct.toLowerCase(),
                     )
@@ -445,6 +568,13 @@ export const BuilderPanel = ({
                         return
                       }
 
+                      setOptionInputs(generated)
+                      const generatedCorrectIndex = generated.findIndex(
+                        (option) => option.trim().toLowerCase() === correct.trim().toLowerCase(),
+                      )
+                      if (generatedCorrectIndex >= 0) {
+                        setCorrectIndex(generatedCorrectIndex)
+                      }
                       setFeedback('Opcoes geradas com IA e salvas com sucesso.')
                     } finally {
                       setGeneratingChoices(false)
@@ -455,58 +585,24 @@ export const BuilderPanel = ({
                   {generatingChoices ? 'Gerando opcoes...' : 'Gerar opcoes com IA'}
                 </button>
 
-                {selectedQuestion.choiceOptions && selectedQuestion.choiceOptions.length > 0 && (
+                {selectedQuestion.options && selectedQuestion.options.length > 0 && (
                   <div className="space-y-1 rounded-lg border border-white/20 bg-black/25 p-2">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
                       Opcoes atuais
                     </p>
-                    {selectedQuestion.choiceOptions.map((option, optionIndex) => (
+                    {selectedQuestion.options.map((option, optionIndex) => (
                       <p
                         key={`${selectedQuestion.id}:choice:${optionIndex}`}
                         className="text-xs text-white/90"
                       >
-                        {optionIndex + 1}. {option}
+                        {optionIndex + 1}. {option}{' '}
+                        {selectedQuestion.correctIndex === optionIndex ? '(correta)' : ''}
                       </p>
                     ))}
                   </div>
                 )}
               </div>
             )}
-
-          {selectedLevel?.mode === 'blank' && selectedQuestion && (
-            <div className="rounded-lg border border-white/15 bg-black/25 p-2">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75">
-                Foto da alternativa
-              </p>
-              <div className="flex items-center gap-3">
-                <img
-                  src={selectedQuestion.imagePath}
-                  alt="Preview da alternativa"
-                  className="h-14 w-14 rounded-full border border-white/30 object-cover"
-                />
-                <label className="cursor-pointer rounded-lg border border-white/30 bg-black/35 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
-                  Enviar foto
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (event) => {
-                      const file = event.target.files?.[0]
-                      if (!file || !questionCategoryId || !questionLevelId || !questionId) return
-                      await onUploadQuestionImage({
-                        categoryId: questionCategoryId,
-                        levelId: questionLevelId,
-                        questionId,
-                        file,
-                      })
-                      setFeedback('Imagem enviada com sucesso.')
-                      event.target.value = ''
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </aside>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { initialCategories } from '@/data/levels'
 import type {
@@ -14,6 +14,54 @@ import type {
 import { useLocalStorageState } from '@/utils/storage'
 
 import { defaultConfig } from './shared'
+
+const normalizeStoredCategories = (categories: Category[]): Category[] => {
+  return categories.map((category) => ({
+    ...category,
+    levels: (Array.isArray(category.levels) ? category.levels : []).map((level) => ({
+      ...level,
+      mode: level.mode ?? 'quiz',
+      answerMode: level.answerMode ?? 'text',
+      timingMode: level.timingMode ?? 'timeless',
+      questions: (Array.isArray(level.questions) ? level.questions : []).map((question, index) => {
+        const sourceOptions = Array.isArray(question.options) ? [...question.options] : []
+        const sourceAcceptedAnswers = Array.isArray(question.acceptedAnswers)
+          ? question.acceptedAnswers.filter(Boolean)
+          : []
+        const sourceCorrectAnswerDisplay =
+          typeof question.correctAnswerDisplay === 'string' ? question.correctAnswerDisplay : ''
+
+        while (sourceOptions.length < 4) {
+          sourceOptions.push(`Opcao ${sourceOptions.length + 1}`)
+        }
+
+        const options = sourceOptions.slice(0, 4).map((option) => option.trim())
+        const safeCorrectIndex =
+          typeof question.correctIndex === 'number' &&
+          question.correctIndex >= 0 &&
+          question.correctIndex < 4
+            ? question.correctIndex
+            : 0
+        const prompt = question.question || question.prompt || `Pergunta ${index + 1}`
+        const correctAnswerDisplay =
+          sourceCorrectAnswerDisplay.trim() || options[safeCorrectIndex] || ''
+        const acceptedAnswers = sourceAcceptedAnswers
+
+        const normalizedQuestion = {
+          ...question,
+          question: prompt,
+          prompt,
+          imagePath: question.imagePath || '/assets/cartoons/template.svg',
+          options,
+          correctIndex: safeCorrectIndex,
+          acceptedAnswers,
+          correctAnswerDisplay,
+        }
+        return normalizedQuestion
+      }),
+    })),
+  }))
+}
 
 export const useQuizStoredState = (remoteEnabled: boolean) => {
   const [categories, setCategories] = useLocalStorageState<Category[]>(
@@ -67,6 +115,10 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
   const [authLoading, setAuthLoading] = useState(remoteEnabled)
 
   const remoteBootstrappedRef = useRef(false)
+
+  useEffect(() => {
+    setCategories((previous) => normalizeStoredCategories(previous))
+  }, [setCategories])
 
   return {
     categories,

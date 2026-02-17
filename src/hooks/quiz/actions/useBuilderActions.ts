@@ -268,11 +268,23 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    options: string[]
+    correctIndex: number
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => {
-    const { categoryId, levelId, questionId, prompt, correctAnswerDisplay, acceptedAnswers } =
-      payload
+    const {
+      categoryId,
+      levelId,
+      questionId,
+      prompt,
+      imagePath,
+      options,
+      correctIndex,
+      correctAnswerDisplay,
+      acceptedAnswers,
+    } = payload
 
     const currentCategory = categories.find((category) => category.id === categoryId)
     const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
@@ -288,7 +300,11 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
         question.id === questionId
           ? {
               ...question,
+              question: prompt,
               prompt,
+              imagePath,
+              options,
+              correctIndex,
               correctAnswerDisplay,
               acceptedAnswers,
             }
@@ -373,16 +389,22 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
 
     const nextChoiceOptions = [correctValue, ...wrongOptions].sort(() => Math.random() - 0.5)
+    const generatedCorrectIndex = Math.max(
+      0,
+      nextChoiceOptions.findIndex((option) => normalizeAnswer(option) === normalizedCorrect),
+    )
     const nextLevel = {
       ...currentLevel,
       questions: currentLevel.questions.map((question) =>
         question.id === questionId
           ? {
               ...question,
+              question: promptValue,
               prompt: promptValue,
               correctAnswerDisplay: correctValue,
               acceptedAnswers,
-              choiceOptions: nextChoiceOptions,
+              options: nextChoiceOptions,
+              correctIndex: generatedCorrectIndex,
             }
           : question,
       ),

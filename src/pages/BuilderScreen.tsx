@@ -37,6 +37,9 @@ interface BuilderScreenProps {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    options: string[]
+    correctIndex: number
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => void | Promise<void>

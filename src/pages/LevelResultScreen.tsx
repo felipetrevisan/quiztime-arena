@@ -13,6 +13,7 @@ interface LevelResultScreenProps {
   hasNextLevel: boolean
   frameRef: RefObject<HTMLElement>
   sheetRef: RefObject<HTMLElement>
+  summaryRef: RefObject<HTMLElement>
   onBackToLevels: () => void
   onNext: () => void
 }
@@ -28,6 +29,7 @@ export const LevelResultScreen = ({
   hasNextLevel,
   frameRef,
   sheetRef,
+  summaryRef,
   onBackToLevels,
   onNext,
 }: LevelResultScreenProps) => {
@@ -53,7 +55,7 @@ export const LevelResultScreen = ({
               {level.mode === 'blank' && (
                 <img
                   src={uploadedImages[question.id] ?? question.imagePath}
-                  alt={question.prompt}
+                  alt={question.question || question.prompt}
                   className="h-10 w-10 rounded-full border border-white/25 object-cover"
                 />
               )}
@@ -80,6 +82,11 @@ export const LevelResultScreen = ({
           targetRef={frameRef}
           fileName={`quiztime-nivel-${levelNumber}.png`}
           label="Salvar resultado como imagem (PNG)"
+        />
+        <ExportButton
+          targetRef={summaryRef}
+          fileName={`quiztime-resumo-nivel-${levelNumber}.png`}
+          label="Salvar resumo do nivel"
         />
         <ExportButton
           targetRef={sheetRef}

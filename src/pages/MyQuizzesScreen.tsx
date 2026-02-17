@@ -32,7 +32,8 @@ const getEntryQuestions = (categories: Category[], entry: RankingEntry) => {
     const answer = entry.answers[questionId] ?? ''
     const correct = entry.results[questionId] ?? false
     const baseLabel = level?.mode === 'blank' ? `Alternativa ${index + 1}` : `Pergunta ${index + 1}`
-    const questionLabel = question?.prompt.trim() ? question.prompt : baseLabel
+    const questionText = question?.question || question?.prompt || ''
+    const questionLabel = questionText.trim() ? questionText : baseLabel
 
     return {
       questionId,
