@@ -11,6 +11,7 @@ export const Route = createFileRoute('/categories/$categoryId/levels/$levelId/qu
 function QuizRoute() {
   const { categoryId, levelId } = Route.useParams()
   const {
+    accessMode,
     activeLevel,
     activeTheme,
     answers,
@@ -42,6 +43,10 @@ function QuizRoute() {
   const levelToRender = isResponderMode ? activeLevel : (routeLevel ?? activeLevel)
 
   useEffect(() => {
+    if (accessMode !== 'admin') {
+      return
+    }
+
     if (
       !isResponderMode &&
       (selectedCategoryId !== categoryId || selectedLevelId !== levelId || !activeLevel)
@@ -50,6 +55,7 @@ function QuizRoute() {
     }
   }, [
     activeLevel,
+    accessMode,
     categoryId,
     isResponderMode,
     levelId,
