@@ -1,3 +1,4 @@
+import { AlertDialog } from '@/components/AlertDialog'
 import type { Category, LevelRecord } from '@/types/quiz'
 import { motion } from 'motion/react'
 import type { MouseEvent } from 'react'
@@ -35,6 +36,7 @@ export const LevelsScreen = ({
   onToggleLevelPublished,
 }: LevelsScreenProps) => {
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [levelToDelete, setLevelToDelete] = useState<{ id: string; title: string } | null>(null)
 
   const handleCardOpen = (event: MouseEvent<HTMLElement>, levelId: string) => {
     const target = event.target as HTMLElement
@@ -227,18 +229,9 @@ export const LevelsScreen = ({
                     </button>
                     <button
                       type="button"
-                      onClick={async (event) => {
+                      onClick={(event) => {
                         event.stopPropagation()
-                        const confirmed = window.confirm(
-                          `Excluir o nivel \"${level.title}\"? Essa acao nao pode ser desfeita.`,
-                        )
-                        if (!confirmed) {
-                          return
-                        }
-                        const ok = await onDeleteLevel(level.id)
-                        setFeedback(
-                          ok ? 'Nivel excluido com sucesso.' : 'Nao foi possivel excluir o nivel.',
-                        )
+                        setLevelToDelete({ id: level.id, title: level.title })
                       }}
                       className="rounded-lg border border-rose-200/45 bg-rose-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-100"
                     >
@@ -251,6 +244,30 @@ export const LevelsScreen = ({
           })}
         </motion.div>
       </div>
+
+      <AlertDialog
+        open={Boolean(levelToDelete)}
+        title="Excluir nivel"
+        message={
+          levelToDelete
+            ? `Excluir o nivel "${levelToDelete.title}"? Essa acao nao pode ser desfeita.`
+            : ''
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        tone="danger"
+        onCancel={() => setLevelToDelete(null)}
+        onConfirm={() => {
+          if (!levelToDelete) {
+            return
+          }
+
+          void onDeleteLevel(levelToDelete.id).then((ok) => {
+            setFeedback(ok ? 'Nivel excluido com sucesso.' : 'Nao foi possivel excluir o nivel.')
+            setLevelToDelete(null)
+          })
+        }}
+      />
     </section>
   )
 }

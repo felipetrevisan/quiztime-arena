@@ -1,3 +1,4 @@
+import { AlertDialog } from '@/components/AlertDialog'
 import type { RankingEntry } from '@/types/quiz'
 import { formatDuration } from '@/utils/scoring'
 import { useMemo, useState } from 'react'
@@ -42,6 +43,7 @@ export const RankingScreen = ({
   onClear,
 }: RankingScreenProps) => {
   const [tab, setTab] = useState<RankingTab>('normal')
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const aliasSet = useMemo(
     () => new Set(currentUserAliases.map(normalizeIdentity)),
     [currentUserAliases],
@@ -258,12 +260,26 @@ export const RankingScreen = ({
       {!isPreviewMode && (
         <button
           type="button"
-          onClick={onClear}
+          onClick={() => setShowClearConfirm(true)}
           className="mt-3 rounded-xl border border-rose-300/35 bg-rose-500/20 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-100"
         >
           Limpar ranking
         </button>
       )}
+
+      <AlertDialog
+        open={showClearConfirm}
+        title="Limpar ranking"
+        message="Tem certeza que deseja limpar todo o ranking local?"
+        confirmLabel="Limpar"
+        cancelLabel="Cancelar"
+        tone="danger"
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          onClear()
+          setShowClearConfirm(false)
+        }}
+      />
     </section>
   )
 }
