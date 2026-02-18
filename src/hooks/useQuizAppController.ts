@@ -2,6 +2,7 @@ import type { QuizAppContextValue } from '@/context/quiz-app-context'
 import { themes } from '@/data/themes'
 import { hasRemote } from '@/services/supabase'
 import type { AccessMode, AppConfig, Level, LevelRecord, ThemeOption } from '@/types/quiz'
+import { getActivePersonaAlias, getPersonaTheme } from '@/utils/persona'
 import { supabase } from '@/utils/supabase'
 import { buildPublicAppUrl } from '@/utils/url'
 import type { Session } from '@supabase/supabase-js'
@@ -146,8 +147,9 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
   const activeTheme =
     themes.find((themeOption) => themeOption.id === (sharedQuiz?.themeId ?? config.themeId)) ??
     themes[0]
-  const headerTitle = sharedQuiz?.title ?? config.title
-  const headerSubtitle = sharedQuiz?.subtitle ?? config.subtitle
+  const activePersonaTheme = getPersonaTheme(getActivePersonaAlias())
+  const headerTitle = sharedQuiz?.title ?? activePersonaTheme?.title ?? config.title
+  const headerSubtitle = sharedQuiz?.subtitle ?? activePersonaTheme?.subtitle ?? config.subtitle
 
   const userEmail = session?.user.email?.toLowerCase() ?? ''
   const isAdmin = !remoteEnabled || adminEmails.length === 0 || adminEmails.includes(userEmail)
@@ -267,11 +269,14 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     }
 
     const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    const redirectTo = import.meta.env.DEV
+      ? `${window.location.origin}${currentPath}`
+      : buildPublicAppUrl(currentPath)
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: buildPublicAppUrl(currentPath),
+        redirectTo,
       },
     })
   }
@@ -299,6 +304,7 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     handleToggleLevelPublished,
     handleUpdateQuestion,
     handleGenerateQuestionChoices,
+    handleSuggestQuestionImages,
     handleGenerateShareLink,
     handleCopyShareLink,
     handleShareRankingPreview,
@@ -435,6 +441,7 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     handleToggleLevelPublished,
     handleUpdateQuestion,
     handleGenerateQuestionChoices,
+    handleSuggestQuestionImages,
     handleGenerateShareLink,
     handleCopyShareLink,
     handleShareRankingPreview,

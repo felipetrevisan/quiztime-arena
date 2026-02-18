@@ -17,6 +17,7 @@ function BuilderRoute() {
     handleBackgroundUpload,
     handleGenerateQuestionChoices,
     handleQuestionImageUpload,
+    handleSuggestQuestionImages,
     handleUpdateQuestion,
     setConfig,
   } = useQuizApp()
@@ -41,6 +42,7 @@ function BuilderRoute() {
       onAddLevel={handleAddLevel}
       onUpdateQuestion={handleUpdateQuestion}
       onGenerateQuestionChoices={handleGenerateQuestionChoices}
+      onSuggestQuestionImages={handleSuggestQuestionImages}
       onUploadQuestionImage={({ categoryId, levelId, questionId, file }) => {
         void handleQuestionImageUpload(questionId, file, { categoryId, levelId })
       }}

@@ -1,4 +1,5 @@
 import { ThemePicker } from '@/components/ThemePicker'
+import { Input } from '@/components/ui/input'
 import type { ThemeId, ThemeOption } from '@/types/quiz'
 import type { ChangeEvent } from 'react'
 
@@ -29,45 +30,29 @@ export const ConfigPanel = ({
         Config
       </h2>
 
-      <div className="space-y-2">
-        <label
-          htmlFor="cfg-title"
-          className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80"
-        >
-          Titulo
-        </label>
-        <input
+      <div>
+        <Input
           id="cfg-title"
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          className="w-full rounded-xl border border-white/30 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white"
+          placeholder="Titulo"
+          className="rounded-xl border-white/30 bg-black/35 px-3 outline-none transition focus:border-white"
         />
       </div>
 
-      <div className="space-y-2">
-        <label
-          htmlFor="cfg-subtitle"
-          className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80"
-        >
-          Subtitulo
-        </label>
-        <input
+      <div>
+        <Input
           id="cfg-subtitle"
           value={subtitle}
           onChange={(event) => onSubtitleChange(event.target.value)}
-          className="w-full rounded-xl border border-white/30 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white"
+          placeholder="Subtitulo"
+          className="rounded-xl border-white/30 bg-black/35 px-3 outline-none transition focus:border-white"
         />
       </div>
 
       <ThemePicker themes={themes} value={themeId} onChange={onThemeChange} />
 
-      <div className="space-y-2">
-        <label
-          htmlFor="cfg-background"
-          className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80"
-        >
-          Fundo custom
-        </label>
+      <div>
         <input
           id="cfg-background"
           type="file"

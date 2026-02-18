@@ -23,6 +23,7 @@ export interface Question {
   question: string
   prompt: string
   imagePath: string
+  imageHint?: string
   options: string[]
   correctIndex: number
   acceptedAnswers: string[]
@@ -131,3 +132,12 @@ export interface ShareSubmissionPayload {
 }
 
 export interface RankingEntry extends ShareSubmissionPayload {}
+
+export interface QuestionImageSuggestion {
+  id: string
+  imageUrl: string
+  thumbUrl: string
+  source: string
+  pageUrl?: string
+  author?: string
+}

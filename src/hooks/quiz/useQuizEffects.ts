@@ -67,6 +67,7 @@ const normalizeSharedLevel = (level: Level): Level => {
         ...question,
         question: prompt,
         prompt,
+        imageHint: question.imageHint ?? '',
         options: options.slice(0, 4),
         correctIndex: safeCorrectIndex,
         acceptedAnswers,
@@ -112,6 +113,15 @@ export const useSyncRouteSelection = (params: {
 export const useServiceWorkerRegistration = () => {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
+      return
+    }
+
+    if (import.meta.env.DEV) {
+      void navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          void registration.unregister()
+        }
+      })
       return
     }
 

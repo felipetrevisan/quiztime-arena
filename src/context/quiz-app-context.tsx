@@ -10,6 +10,7 @@ import type {
   Level,
   LevelMode,
   LevelRecord,
+  QuestionImageSuggestion,
   RankingEntry,
   ResponderResult,
   ShareQuizPayload,
@@ -101,6 +102,7 @@ export interface QuizAppContextValue {
     questionId: string
     prompt: string
     imagePath: string
+    imageHint: string
     options: string[]
     correctIndex: number
     correctAnswerDisplay: string
@@ -111,9 +113,19 @@ export interface QuizAppContextValue {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    imageHint: string
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => Promise<string[] | null>
+  handleSuggestQuestionImages: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    imagePath: string
+    imageHint: string
+  }) => Promise<QuestionImageSuggestion[] | null>
   handleGenerateShareLink: (levelId: string) => Promise<void>
   handleCopyShareLink: (levelId: string) => Promise<void>
   handleShareRankingPreview: (levelId: string) => Promise<void>

@@ -1,0 +1,5 @@
+[functions.generate-question-options]
+verify_jwt = false
+
+[functions.suggest-question-images]
+verify_jwt = false

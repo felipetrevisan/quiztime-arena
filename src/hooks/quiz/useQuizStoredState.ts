@@ -52,6 +52,7 @@ const normalizeStoredCategories = (categories: Category[]): Category[] => {
           question: prompt,
           prompt,
           imagePath: question.imagePath || '/assets/cartoons/template.svg',
+          imageHint: question.imageHint ?? '',
           options,
           correctIndex: safeCorrectIndex,
           acceptedAnswers,

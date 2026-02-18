@@ -1,4 +1,10 @@
-import type { Category, Level, Question, RankingEntry } from '@/types/quiz'
+import type {
+  Category,
+  Level,
+  Question,
+  QuestionImageSuggestion,
+  RankingEntry,
+} from '@/types/quiz'
 import { isSupabaseEnabled, supabase } from '@/utils/supabase'
 
 interface CategoryRow {
@@ -27,6 +33,7 @@ interface QuestionRow {
   id: string
   prompt: string
   image_path: string
+  image_hint: string | null
   accepted_answers: string[] | null
   correct_answer_display: string
   choice_options: string[] | null
@@ -37,9 +44,22 @@ interface QuestionRow {
 interface GenerateQuestionChoicesPayload {
   categoryTitle: string
   levelTitle: string
+  questionTitle?: string
   questionPrompt: string
+  imagePath?: string
+  imageHint?: string
   correctAnswer: string
   acceptedAnswers: string[]
+}
+
+interface SuggestQuestionImagesPayload {
+  categoryTitle?: string
+  levelTitle?: string
+  questionTitle?: string
+  questionPrompt?: string
+  imageHint?: string
+  imagePath?: string
+  limit?: number
 }
 
 interface RankingRow {
@@ -82,6 +102,7 @@ const toQuestion = (row: QuestionRow): Question => {
     question: row.prompt,
     prompt: row.prompt,
     imagePath: row.image_path,
+    imageHint: row.image_hint ?? '',
     options,
     correctIndex: safeCorrectIndex,
     acceptedAnswers: row.accepted_answers ?? [],
@@ -144,7 +165,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,accepted_answers,correct_answer_display,choice_options,correct_index,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,image_hint,accepted_answers,correct_answer_display,choice_options,correct_index,position))',
     )
     .order('position', { ascending: true })
 
@@ -170,6 +191,7 @@ const upsertQuestion = async (
       level_id: levelId,
       prompt: question.question || question.prompt,
       image_path: question.imagePath,
+      image_hint: question.imageHint ?? '',
       accepted_answers: question.acceptedAnswers,
       correct_answer_display: question.correctAnswerDisplay,
       choice_options: question.options ?? [],
@@ -278,26 +300,151 @@ export const generateRemoteQuestionChoices = async (
 ): Promise<string[] | null> => {
   if (!supabase) return null
 
-  const { data, error } = await supabase.functions.invoke<{
-    options?: unknown
-  }>('generate-question-options', {
-    body: payload,
-  })
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-  if (error) {
-    console.error('Erro ao gerar opcoes com IA', error)
+    if (!session?.access_token) {
+      console.error('Erro ao gerar opcoes com IA: sessao nao encontrada')
+      return null
+    }
+
+    const { data, error, response } = await supabase.functions.invoke<{
+      options?: unknown
+      error?: string
+      details?: string
+      providerStatus?: number
+      providerBody?: string
+    }>('generate-question-options', {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+
+    if (error) {
+      let functionDetails = ''
+      if (response) {
+        try {
+          const contentType = response.headers.get('Content-Type') ?? ''
+          if (contentType.includes('application/json')) {
+            const json = (await response.clone().json()) as Record<string, unknown>
+            functionDetails = JSON.stringify(json)
+          } else {
+            functionDetails = await response.clone().text()
+          }
+        } catch {
+          functionDetails = ''
+        }
+      }
+
+      console.error('Erro ao gerar opcoes com IA', {
+        error,
+        functionDetails,
+      })
+      return null
+    }
+
+    const options = Array.isArray(data?.options)
+      ? data.options.filter((item): item is string => typeof item === 'string')
+      : []
+
+    if (options.length !== 4) {
+      return null
+    }
+
+    return options
+  } catch (error) {
+    console.error('Erro inesperado ao gerar opcoes com IA', error)
     return null
   }
+}
 
-  const options = Array.isArray(data?.options)
-    ? data.options.filter((item): item is string => typeof item === 'string')
-    : []
+export const suggestRemoteQuestionImages = async (
+  payload: SuggestQuestionImagesPayload,
+): Promise<QuestionImageSuggestion[] | null> => {
+  if (!supabase) return null
 
-  if (options.length !== 4) {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session?.access_token) {
+      console.error('Erro ao sugerir imagens com IA: sessao nao encontrada')
+      return null
+    }
+
+    const { data, error, response } = await supabase.functions.invoke<{
+      images?: unknown
+      error?: string
+      details?: string
+    }>('suggest-question-images', {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+
+    if (error) {
+      let functionDetails = ''
+      if (response) {
+        try {
+          const contentType = response.headers.get('Content-Type') ?? ''
+          if (contentType.includes('application/json')) {
+            const json = (await response.clone().json()) as Record<string, unknown>
+            functionDetails = JSON.stringify(json)
+          } else {
+            functionDetails = await response.clone().text()
+          }
+        } catch {
+          functionDetails = ''
+        }
+      }
+
+      console.error('Erro ao sugerir imagens com IA', {
+        error,
+        functionDetails,
+      })
+      return null
+    }
+
+    const images = Array.isArray(data?.images)
+      ? data.images
+          .map((item): QuestionImageSuggestion | null => {
+            if (!item || typeof item !== 'object') return null
+            const asRecord = item as Record<string, unknown>
+            const id = typeof asRecord.id === 'string' ? asRecord.id.trim() : ''
+            const imageUrl = typeof asRecord.imageUrl === 'string' ? asRecord.imageUrl.trim() : ''
+            const thumbUrl =
+              typeof asRecord.thumbUrl === 'string' ? asRecord.thumbUrl.trim() : imageUrl
+            const source = typeof asRecord.source === 'string' ? asRecord.source.trim() : 'web'
+            const pageUrl =
+              typeof asRecord.pageUrl === 'string' ? asRecord.pageUrl.trim() : undefined
+            const author = typeof asRecord.author === 'string' ? asRecord.author.trim() : undefined
+
+            if (!id || !imageUrl) {
+              return null
+            }
+
+            return {
+              id,
+              imageUrl,
+              thumbUrl: thumbUrl || imageUrl,
+              source,
+              pageUrl,
+              author,
+            }
+          })
+          .filter((item): item is QuestionImageSuggestion => Boolean(item))
+      : []
+
+    return images
+  } catch (error) {
+    console.error('Erro inesperado ao sugerir imagens com IA', error)
     return null
   }
-
-  return options
 }
 
 export const fetchRemoteRankings = async (): Promise<RankingEntry[] | null> => {

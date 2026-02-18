@@ -4,6 +4,7 @@ import type {
   AnswerMode,
   Category,
   LevelMode,
+  QuestionImageSuggestion,
   ThemeId,
   ThemeOption,
   TimingMode,
@@ -38,6 +39,7 @@ interface BuilderScreenProps {
     questionId: string
     prompt: string
     imagePath: string
+    imageHint: string
     options: string[]
     correctIndex: number
     correctAnswerDisplay: string
@@ -48,9 +50,19 @@ interface BuilderScreenProps {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    imageHint: string
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => Promise<string[] | null>
+  onSuggestQuestionImages: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    imagePath: string
+    imageHint: string
+  }) => Promise<QuestionImageSuggestion[] | null>
   onUploadQuestionImage: (payload: {
     categoryId: string
     levelId: string
@@ -81,6 +93,7 @@ export const BuilderScreen = ({
   onAddLevel,
   onUpdateQuestion,
   onGenerateQuestionChoices,
+  onSuggestQuestionImages,
   onUploadQuestionImage,
   onBack,
 }: BuilderScreenProps) => {
@@ -146,6 +159,7 @@ export const BuilderScreen = ({
             onAddLevel={onAddLevel}
             onUpdateQuestion={onUpdateQuestion}
             onGenerateQuestionChoices={onGenerateQuestionChoices}
+            onSuggestQuestionImages={onSuggestQuestionImages}
             onUploadQuestionImage={onUploadQuestionImage}
           />
         )}

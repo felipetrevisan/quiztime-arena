@@ -25,11 +25,6 @@ const isLocalHost = (host: string): boolean => {
 }
 
 export const getPublicAppBaseUrl = (): string => {
-  const envBase = normalizeBaseUrl(import.meta.env.VITE_PUBLIC_APP_URL ?? '')
-  if (envBase) {
-    return envBase
-  }
-
   if (typeof window !== 'undefined') {
     const currentOrigin = window.location.origin
 
@@ -37,6 +32,11 @@ export const getPublicAppBaseUrl = (): string => {
       const host = window.location.host.toLowerCase()
       if (isLocalHost(host)) {
         return currentOrigin
+      }
+
+      const envBase = normalizeBaseUrl(import.meta.env.VITE_PUBLIC_APP_URL ?? '')
+      if (envBase) {
+        return envBase
       }
 
       if (host.endsWith('.vercel.app')) {
@@ -47,6 +47,11 @@ export const getPublicAppBaseUrl = (): string => {
     }
 
     return currentOrigin
+  }
+
+  const envBase = normalizeBaseUrl(import.meta.env.VITE_PUBLIC_APP_URL ?? '')
+  if (envBase) {
+    return envBase
   }
 
   return VERCEL_CANONICAL_URL

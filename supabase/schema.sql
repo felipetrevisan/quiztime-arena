@@ -31,6 +31,7 @@ create table if not exists public.questions (
   level_id text not null references public.levels(id) on delete cascade,
   prompt text not null default '',
   image_path text not null,
+  image_hint text not null default '',
   accepted_answers text[] not null default '{}',
   correct_answer_display text not null default '',
   choice_options text[] not null default '{}',
@@ -72,6 +73,9 @@ alter table public.levels
 
 alter table public.questions
   add column if not exists choice_options text[] not null default '{}';
+
+alter table public.questions
+  add column if not exists image_hint text not null default '';
 
 alter table public.questions
   add column if not exists correct_index integer not null default 0;

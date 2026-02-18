@@ -127,6 +127,34 @@ Arquivo da funcao:
 
 - `supabase/functions/generate-question-options/index.ts`
 
+### 4.1) (Opcional) IA para sugerir imagens da pergunta
+
+No Builder, em `Gabarito automatico`, existe o botao `Sugerir imagens com IA`.
+
+Publique tambem esta Edge Function:
+
+```bash
+supabase functions deploy suggest-question-images
+```
+
+Secrets opcionais:
+
+```bash
+supabase secrets set AI_PROVIDER=auto
+supabase secrets set GEMINI_API_KEY=...
+supabase secrets set GEMINI_MODEL=gemini-2.0-flash
+supabase secrets set OPENAI_API_KEY=...
+supabase secrets set OPENAI_MODEL=gpt-4o-mini
+```
+
+Para buscar imagens com melhor cobertura, configure Pexels:
+
+```bash
+supabase secrets set PEXELS_API_KEY=...
+```
+
+Sem Pexels, a funcao usa fallback em Wikimedia Commons.
+
 ### 5) Subir com fallback local
 
 - Se as variaveis de Supabase estiverem definidas: usa banco/storage remoto.

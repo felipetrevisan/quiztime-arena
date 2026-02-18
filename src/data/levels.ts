@@ -8,11 +8,13 @@ const q = (
   correctAnswerDisplay: string,
   options?: string[],
   correctIndex = 0,
+  imageHint = '',
 ): Question => ({
   id,
   question: prompt,
   prompt,
   imagePath,
+  imageHint,
   options: options ?? [correctAnswerDisplay, 'Opcao B', 'Opcao C', 'Opcao D'],
   correctIndex,
   acceptedAnswers,

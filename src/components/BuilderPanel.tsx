@@ -1,4 +1,14 @@
-import type { AnswerMode, Category, LevelMode, TimingMode } from '@/types/quiz'
+import type {
+  AnswerMode,
+  Category,
+  LevelMode,
+  QuestionImageSuggestion,
+  TimingMode,
+} from '@/types/quiz'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useEffect, useMemo, useState } from 'react'
 
 export type BuilderPanelSection = 'category' | 'level' | 'answer'
@@ -21,6 +31,7 @@ interface BuilderPanelProps {
     questionId: string
     prompt: string
     imagePath: string
+    imageHint: string
     options: string[]
     correctIndex: number
     correctAnswerDisplay: string
@@ -31,9 +42,19 @@ interface BuilderPanelProps {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    imageHint: string
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }) => Promise<string[] | null>
+  onSuggestQuestionImages: (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    imagePath: string
+    imageHint: string
+  }) => Promise<QuestionImageSuggestion[] | null>
   onUploadQuestionImage: (payload: {
     categoryId: string
     levelId: string
@@ -62,6 +83,7 @@ export const BuilderPanel = ({
   onAddLevel,
   onUpdateQuestion,
   onGenerateQuestionChoices,
+  onSuggestQuestionImages,
   onUploadQuestionImage,
 }: BuilderPanelProps) => {
   const [categoryTitle, setCategoryTitle] = useState('')
@@ -77,12 +99,16 @@ export const BuilderPanel = ({
   const [questionId, setQuestionId] = useState(categories[0]?.levels[0]?.questions[0]?.id ?? '')
   const [questionPrompt, setQuestionPrompt] = useState('')
   const [questionImagePath, setQuestionImagePath] = useState('')
+  const [questionImageHint, setQuestionImageHint] = useState('')
   const [optionInputs, setOptionInputs] = useState<string[]>(['', '', '', ''])
   const [correctIndex, setCorrectIndex] = useState(0)
   const [correctAnswerDisplay, setCorrectAnswerDisplay] = useState('')
   const [acceptedAnswersInput, setAcceptedAnswersInput] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
   const [generatingChoices, setGeneratingChoices] = useState(false)
+  const [suggestingImages, setSuggestingImages] = useState(false)
+  const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(null)
+  const [imageSuggestions, setImageSuggestions] = useState<QuestionImageSuggestion[]>([])
 
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ id: category.id, label: category.title })),
@@ -155,18 +181,19 @@ export const BuilderPanel = ({
     if (!selectedQuestion) {
       setQuestionPrompt('')
       setQuestionImagePath('')
+      setQuestionImageHint('')
       setOptionInputs(['', '', '', ''])
       setCorrectIndex(0)
       setCorrectAnswerDisplay('')
       setAcceptedAnswersInput('')
+      setImageSuggestions([])
       return
     }
 
     setQuestionPrompt(selectedQuestion.question || selectedQuestion.prompt)
     setQuestionImagePath(selectedQuestion.imagePath)
-    const safeOptions = Array.isArray(selectedQuestion.options)
-      ? [...selectedQuestion.options]
-      : []
+    setQuestionImageHint(selectedQuestion.imageHint ?? '')
+    const safeOptions = Array.isArray(selectedQuestion.options) ? [...selectedQuestion.options] : []
     while (safeOptions.length < 4) {
       safeOptions.push('')
     }
@@ -178,11 +205,95 @@ export const BuilderPanel = ({
     )
     setCorrectAnswerDisplay(selectedQuestion.correctAnswerDisplay)
     setAcceptedAnswersInput(selectedQuestion.acceptedAnswers.join(', '))
+    setImageSuggestions([])
   }, [selectedQuestion])
 
   const showCategorySection = !section || section === 'category'
   const showLevelSection = !section || section === 'level'
   const showAnswerSection = !section || section === 'answer'
+
+  const buildCurrentQuestionUpdatePayload = (nextImagePath: string) => {
+    if (!questionCategoryId || !questionLevelId || !questionId || !selectedQuestion) {
+      return null
+    }
+
+    const normalizedOptions = optionInputs.map((item) => item.trim())
+    const safeCorrectIndex = correctIndex >= 0 && correctIndex < 4 ? correctIndex : 0
+    const resolvedCorrectFromOptions =
+      selectedLevel?.answerMode === 'choices' ? (normalizedOptions[safeCorrectIndex] ?? '') : ''
+    const fallbackCorrect =
+      selectedQuestion.correctAnswerDisplay.trim() || selectedQuestion.acceptedAnswers[0] || ''
+    const correct = (resolvedCorrectFromOptions || correctAnswerDisplay || fallbackCorrect).trim()
+    const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
+    const hasCorrectAlready = acceptedAnswers.some(
+      (item) => item.toLowerCase() === correct.toLowerCase(),
+    )
+
+    if (correct && !hasCorrectAlready) {
+      acceptedAnswers.unshift(correct)
+    }
+
+    return {
+      categoryId: questionCategoryId,
+      levelId: questionLevelId,
+      questionId,
+      prompt: questionPrompt.trim(),
+      imagePath: nextImagePath,
+      imageHint: questionImageHint.trim(),
+      options: normalizedOptions,
+      correctIndex: safeCorrectIndex,
+      correctAnswerDisplay: correct,
+      acceptedAnswers,
+    }
+  }
+
+  const applyImageSuggestion = async (suggestion: QuestionImageSuggestion) => {
+    if (!questionCategoryId || !questionLevelId || !questionId || !selectedQuestion) {
+      return
+    }
+
+    setApplyingSuggestionId(suggestion.id)
+    try {
+      const response = await fetch(suggestion.imageUrl)
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}`)
+      }
+      const blob = await response.blob()
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('Invalid image MIME type')
+      }
+
+      const extension = blob.type.split('/')[1]?.split(';')[0] || 'jpg'
+      const file = new File([blob], `ai-${questionId}.${extension}`, {
+        type: blob.type || 'image/jpeg',
+      })
+
+      await onUploadQuestionImage({
+        categoryId: questionCategoryId,
+        levelId: questionLevelId,
+        questionId,
+        file,
+      })
+
+      setQuestionImagePath(suggestion.imageUrl)
+      setFeedback('Imagem da sugestao aplicada com sucesso.')
+      return
+    } catch (error) {
+      console.warn('Falha ao importar imagem sugerida para upload', error)
+    } finally {
+      setApplyingSuggestionId(null)
+    }
+
+    const payload = buildCurrentQuestionUpdatePayload(suggestion.imageUrl)
+    if (!payload) {
+      setFeedback('Nao foi possivel aplicar a sugestao de imagem.')
+      return
+    }
+
+    await onUpdateQuestion(payload)
+    setQuestionImagePath(suggestion.imageUrl)
+    setFeedback('Imagem aplicada por URL externa (sem upload local).')
+  }
 
   return (
     <aside className="space-y-3 rounded-3xl border border-white/20 bg-black/35 p-4 text-white shadow-xl backdrop-blur-sm">
@@ -201,19 +312,17 @@ export const BuilderPanel = ({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             Nova categoria
           </p>
-          <input
+          <Input
             value={categoryTitle}
             onChange={(event) => setCategoryTitle(event.target.value)}
             placeholder="Titulo"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
-          <input
+          <Input
             value={categoryDescription}
             onChange={(event) => setCategoryDescription(event.target.value)}
             placeholder="Descricao"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
-          <button
+          <Button
             type="button"
             onClick={async () => {
               if (!categoryTitle.trim()) return
@@ -232,10 +341,10 @@ export const BuilderPanel = ({
               setCategoryId(id)
               setFeedback('Categoria salva com sucesso.')
             }}
-            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+            className="w-full tracking-[0.14em]"
           >
             Adicionar categoria
-          </button>
+          </Button>
         </div>
       )}
 
@@ -244,33 +353,29 @@ export const BuilderPanel = ({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             Novo nivel
           </p>
-          <select
+          <Select
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           >
             {categoryOptions.map((option) => (
               <option key={option.id} value={option.id} className="bg-slate-900">
                 {option.label}
               </option>
             ))}
-          </select>
-          <input
+          </Select>
+          <Input
             value={levelTitle}
             onChange={(event) => setLevelTitle(event.target.value)}
             placeholder="Titulo do nivel"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
-          <input
+          <Input
             value={levelDescription}
             onChange={(event) => setLevelDescription(event.target.value)}
             placeholder="Descricao"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
-          <select
+          <Select
             value={levelMode}
             onChange={(event) => setLevelMode(event.target.value as LevelMode)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
             aria-label="Tipo de nivel"
           >
             <option value="quiz" className="bg-slate-900">
@@ -279,11 +384,10 @@ export const BuilderPanel = ({
             <option value="blank" className="bg-slate-900">
               Quiz em branco (8 alternativas)
             </option>
-          </select>
-          <select
+          </Select>
+          <Select
             value={timingMode}
             onChange={(event) => setTimingMode(event.target.value as TimingMode)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
             aria-label="Modo de tempo"
           >
             <option value="timeless" className="bg-slate-900">
@@ -292,12 +396,11 @@ export const BuilderPanel = ({
             <option value="speedrun" className="bg-slate-900">
               Speed Run (pontua por rapidez)
             </option>
-          </select>
+          </Select>
           {levelMode === 'quiz' && (
-            <select
+            <Select
               value={answerMode}
               onChange={(event) => setAnswerMode(event.target.value as AnswerMode)}
-              className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
               aria-label="Formato de resposta"
             >
               <option value="text" className="bg-slate-900">
@@ -306,9 +409,9 @@ export const BuilderPanel = ({
               <option value="choices" className="bg-slate-900">
                 Multipla escolha (4 opcoes)
               </option>
-            </select>
+            </Select>
           )}
-          <button
+          <Button
             type="button"
             onClick={async () => {
               if (!categoryId || !levelTitle.trim()) return
@@ -324,10 +427,10 @@ export const BuilderPanel = ({
               setLevelDescription('')
               setFeedback('Nivel criado com sucesso.')
             }}
-            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+            className="w-full tracking-[0.14em]"
           >
             Adicionar nivel
-          </button>
+          </Button>
         </div>
       )}
 
@@ -336,34 +439,31 @@ export const BuilderPanel = ({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             Gabarito automatico
           </p>
-          <select
+          <Select
             value={questionCategoryId}
             onChange={(event) => setQuestionCategoryId(event.target.value)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           >
             {categoryOptions.map((option) => (
               <option key={option.id} value={option.id} className="bg-slate-900">
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={questionLevelId}
             onChange={(event) => setQuestionLevelId(event.target.value)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           >
             {levelOptions.map((level) => (
               <option key={level.id} value={level.id} className="bg-slate-900">
                 {level.title}
               </option>
             ))}
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={questionId}
             onChange={(event) => setQuestionId(event.target.value)}
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           >
             {questionOptions.map((question, index) => (
               <option key={question.id} value={question.id} className="bg-slate-900">
@@ -372,13 +472,12 @@ export const BuilderPanel = ({
                   : `Pergunta ${index + 1}`}
               </option>
             ))}
-          </select>
+          </Select>
 
-          <input
+          <Input
             value={questionPrompt}
             onChange={(event) => setQuestionPrompt(event.target.value)}
             placeholder="Texto da pergunta (opcional no modo em branco)"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
           <div className="rounded-lg border border-white/15 bg-black/25 p-2">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75">
@@ -391,15 +490,20 @@ export const BuilderPanel = ({
                 className="mb-2 h-20 w-full rounded-xl border border-white/25 object-cover"
               />
             )}
-            <input
+            <Input
               value={questionImagePath}
               onChange={(event) => setQuestionImagePath(event.target.value)}
               placeholder="/assets/cartoons/exemplo.svg"
-              className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
             />
             <p className="mt-1 text-[10px] text-white/65">
               Informe o path local em /public/assets ou use upload abaixo.
             </p>
+            <Textarea
+              value={questionImageHint}
+              onChange={(event) => setQuestionImageHint(event.target.value)}
+              placeholder="Dica de contexto da imagem para IA (ex: personagem, roupa, cena)"
+              className="mt-2 h-16 resize-none"
+            />
             <label className="mt-2 block cursor-pointer rounded-lg border border-white/30 bg-black/35 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white">
               Upload imagem
               <input
@@ -420,6 +524,79 @@ export const BuilderPanel = ({
                 }}
               />
             </label>
+            <Button
+              type="button"
+              onClick={async () => {
+                if (suggestingImages) return
+                if (!questionCategoryId || !questionLevelId || !questionId) return
+
+                setSuggestingImages(true)
+                try {
+                  const suggestions = await onSuggestQuestionImages({
+                    categoryId: questionCategoryId,
+                    levelId: questionLevelId,
+                    questionId,
+                    prompt: questionPrompt.trim(),
+                    imagePath: questionImagePath.trim() || selectedQuestion?.imagePath || '',
+                    imageHint: questionImageHint.trim(),
+                  })
+
+                  if (!suggestions || suggestions.length === 0) {
+                    setImageSuggestions([])
+                    setFeedback(
+                      'Nenhuma sugestao encontrada. Ajuste o texto da pergunta ou dica da imagem.',
+                    )
+                    return
+                  }
+
+                  setImageSuggestions(suggestions)
+                  setFeedback('Sugestoes de imagem carregadas.')
+                } catch (error) {
+                  console.error('Falha ao sugerir imagens com IA', error)
+                  const details =
+                    error instanceof Error && error.message ? ` Detalhes: ${error.message}` : ''
+                  setFeedback(
+                    `Falha ao buscar sugestoes. Verifique a edge function no Supabase.${details}`,
+                  )
+                } finally {
+                  setSuggestingImages(false)
+                }
+              }}
+              className="mt-2 w-full border-fuchsia-200/40 bg-fuchsia-300/90 text-slate-900"
+            >
+              {suggestingImages ? 'Buscando imagens...' : 'Sugerir imagens com IA'}
+            </Button>
+            {imageSuggestions.length > 0 && (
+              <div className="mt-2 grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1">
+                {imageSuggestions.map((suggestion) => (
+                  <div
+                    key={suggestion.id}
+                    className="rounded-lg border border-white/20 bg-black/30 p-2"
+                  >
+                    <img
+                      src={suggestion.thumbUrl || suggestion.imageUrl}
+                      alt="Sugestao de imagem"
+                      className="h-20 w-full rounded-md border border-white/20 object-cover"
+                      loading="lazy"
+                    />
+                    <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.1em] text-white/70">
+                      Fonte: {suggestion.source}
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        if (applyingSuggestionId) return
+                        await applyImageSuggestion(suggestion)
+                      }}
+                      size="sm"
+                      className="mt-1 w-full rounded-md border-white/30 bg-white/90 text-slate-900"
+                    >
+                      {applyingSuggestionId === suggestion.id ? 'Aplicando...' : 'Usar imagem'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           {selectedLevel?.answerMode === 'choices' && selectedLevel?.mode !== 'blank' && (
             <div className="space-y-2 rounded-lg border border-cyan-300/25 bg-cyan-500/10 p-2">
@@ -427,8 +604,11 @@ export const BuilderPanel = ({
                 Opcoes da multipla escolha (4)
               </p>
               {optionInputs.map((option, optionIndex) => (
-                <input
-                  key={`builder-option:${optionIndex}`}
+                <Input
+                  key={`builder-option:${
+                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                    optionIndex
+                  }`}
                   value={option}
                   onChange={(event) => {
                     setOptionInputs((previous) => {
@@ -438,16 +618,12 @@ export const BuilderPanel = ({
                     })
                   }}
                   placeholder={`Opcao ${optionIndex + 1}`}
-                  className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
                 />
               ))}
-              <label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100/90">
-                Indice da correta
-              </label>
-              <select
+              <Select
                 value={correctIndex}
                 onChange={(event) => setCorrectIndex(Number(event.target.value))}
-                className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+                aria-label="Indice da alternativa correta"
               >
                 <option value={0} className="bg-slate-900">
                   Opcao 1
@@ -461,30 +637,31 @@ export const BuilderPanel = ({
                 <option value={3} className="bg-slate-900">
                   Opcao 4
                 </option>
-              </select>
+              </Select>
             </div>
           )}
-          <input
+          <Input
             value={correctAnswerDisplay}
             onChange={(event) => setCorrectAnswerDisplay(event.target.value)}
             placeholder="Resposta correta principal"
-            className="w-full rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
           />
-          <textarea
+          <Textarea
             value={acceptedAnswersInput}
             onChange={(event) => setAcceptedAnswersInput(event.target.value)}
             placeholder="Sinonimos aceitos (separe por virgula, ponto e virgula ou quebra de linha)"
-            className="h-20 w-full resize-none rounded-lg border border-white/25 bg-black/30 px-2 py-2 text-sm"
+            className="h-20 resize-none"
           />
 
-          <button
+          <Button
             type="button"
             onClick={async () => {
               if (!questionCategoryId || !questionLevelId || !questionId) return
 
               const normalizedOptions = optionInputs.map((item) => item.trim())
               const resolvedCorrectFromOptions =
-                selectedLevel?.answerMode === 'choices' ? normalizedOptions[correctIndex] ?? '' : ''
+                selectedLevel?.answerMode === 'choices'
+                  ? (normalizedOptions[correctIndex] ?? '')
+                  : ''
               const acceptedAnswers = parseAcceptedAnswers(acceptedAnswersInput)
               const correct = (resolvedCorrectFromOptions || correctAnswerDisplay).trim()
               const hasCorrectAlready = acceptedAnswers.some(
@@ -510,6 +687,7 @@ export const BuilderPanel = ({
                 questionId,
                 prompt: questionPrompt.trim(),
                 imagePath: questionImagePath.trim() || selectedQuestion?.imagePath || '',
+                imageHint: questionImageHint.trim(),
                 options: normalizedOptions,
                 correctIndex,
                 correctAnswerDisplay: correct,
@@ -517,10 +695,10 @@ export const BuilderPanel = ({
               })
               setFeedback('Gabarito atualizado com sucesso.')
             }}
-            className="w-full rounded-lg border border-white/25 bg-white/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-900"
+            className="w-full tracking-[0.14em]"
           >
             Salvar gabarito
-          </button>
+          </Button>
 
           {selectedLevel?.mode !== 'blank' &&
             selectedLevel?.answerMode === 'choices' &&
@@ -529,7 +707,7 @@ export const BuilderPanel = ({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100/90">
                   Multipla escolha com IA
                 </p>
-                <button
+                <Button
                   type="button"
                   disabled={generatingChoices}
                   onClick={async () => {
@@ -559,12 +737,14 @@ export const BuilderPanel = ({
                         levelId: questionLevelId,
                         questionId,
                         prompt: questionPrompt.trim(),
+                        imagePath: questionImagePath.trim() || selectedQuestion?.imagePath || '',
+                        imageHint: questionImageHint.trim(),
                         correctAnswerDisplay: correct,
                         acceptedAnswers,
                       })
 
                       if (!generated) {
-                        setFeedback('Nao foi possivel gerar opcoes com IA. Tente novamente.')
+                        setFeedback('Nao foi possivel gerar opcoes automaticamente.')
                         return
                       }
 
@@ -575,15 +755,20 @@ export const BuilderPanel = ({
                       if (generatedCorrectIndex >= 0) {
                         setCorrectIndex(generatedCorrectIndex)
                       }
-                      setFeedback('Opcoes geradas com IA e salvas com sucesso.')
+                      setFeedback('Opcoes geradas e salvas com sucesso.')
+                    } catch (error) {
+                      console.error('Falha ao gerar opcoes com IA', error)
+                      setFeedback(
+                        'Falha ao gerar com IA. Verifique deploy da function e GEMINI_API_KEY.',
+                      )
                     } finally {
                       setGeneratingChoices(false)
                     }
                   }}
-                  className="w-full rounded-lg border border-cyan-200/40 bg-cyan-300/90 px-2 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full border-cyan-200/40 bg-cyan-300/90 text-slate-900 disabled:opacity-60"
                 >
                   {generatingChoices ? 'Gerando opcoes...' : 'Gerar opcoes com IA'}
-                </button>
+                </Button>
 
                 {selectedQuestion.options && selectedQuestion.options.length > 0 && (
                   <div className="space-y-1 rounded-lg border border-white/20 bg-black/25 p-2">

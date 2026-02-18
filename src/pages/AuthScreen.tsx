@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import type { AccessMode } from '@/types/quiz'
 
 interface AuthScreenProps {
@@ -47,14 +48,14 @@ export const AuthScreen = ({ mode, onGoogleLogin }: AuthScreenProps) => {
         </p>
 
         <div className="mt-4 grid gap-2">
-          <button
+          <Button
             type="button"
             onClick={onGoogleLogin}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-900"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border-white/30 bg-white/90 py-3 text-xs font-black tracking-[0.14em] text-slate-900"
           >
             <GoogleIcon />
             Entrar com Google
-          </button>
+          </Button>
         </div>
       </div>
     </section>

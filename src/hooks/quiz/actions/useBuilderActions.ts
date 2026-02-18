@@ -3,12 +3,20 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 import {
   deleteRemoteLevel,
   generateRemoteQuestionChoices,
+  suggestRemoteQuestionImages,
   updateRemoteQuestionImage,
   uploadRemoteAsset,
   upsertRemoteCategory,
   upsertRemoteLevel,
 } from '@/services/supabase'
-import type { AnswerMode, Category, Level, LevelMode, TimingMode } from '@/types/quiz'
+import type {
+  AnswerMode,
+  Category,
+  Level,
+  LevelMode,
+  QuestionImageSuggestion,
+  TimingMode,
+} from '@/types/quiz'
 import { createEmptyLevel } from '@/utils/builder'
 import { normalizeAnswer } from '@/utils/normalize'
 
@@ -35,6 +43,61 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     setUploadedImages,
     setCategories,
   } = params
+
+  const shuffle = <T,>(items: T[]): T[] => {
+    const next = [...items]
+    for (let index = next.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1))
+      const current = next[index]
+      next[index] = next[swapIndex]
+      next[swapIndex] = current
+    }
+    return next
+  }
+
+  const buildLocalChoiceFallback = (params: {
+    level: Level
+    questionId: string
+    correctAnswer: string
+  }): string[] => {
+    const { level, questionId, correctAnswer } = params
+    const normalizedCorrect = normalizeAnswer(correctAnswer)
+
+    const candidates = level.questions
+      .filter((question) => question.id !== questionId)
+      .map((question) => {
+        const byIndex =
+          question.options?.[question.correctIndex >= 0 ? question.correctIndex : 0] ?? ''
+        return (
+          question.correctAnswerDisplay?.trim() || question.acceptedAnswers?.[0]?.trim() || byIndex
+        )
+      })
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .filter((value, index, values) => {
+        const normalized = normalizeAnswer(value)
+        return values.findIndex((item) => normalizeAnswer(item) === normalized) === index
+      })
+      .filter((value) => normalizeAnswer(value) !== normalizedCorrect)
+
+    const wrong = shuffle(candidates).slice(0, 3)
+
+    const fallbackWrong = ['Opcao A', 'Opcao B', 'Opcao C', 'Opcao D', 'Opcao E', 'Opcao F']
+    for (const item of fallbackWrong) {
+      if (wrong.length >= 3) {
+        break
+      }
+      const normalized = normalizeAnswer(item)
+      if (
+        normalized !== normalizedCorrect &&
+        !wrong.some((candidate) => normalizeAnswer(candidate) === normalized)
+      ) {
+        wrong.push(item)
+      }
+    }
+
+    return shuffle([correctAnswer, ...wrong.slice(0, 3)])
+  }
 
   const handleBackgroundUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -269,6 +332,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     questionId: string
     prompt: string
     imagePath: string
+    imageHint: string
     options: string[]
     correctIndex: number
     correctAnswerDisplay: string
@@ -280,6 +344,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       questionId,
       prompt,
       imagePath,
+      imageHint,
       options,
       correctIndex,
       correctAnswerDisplay,
@@ -303,6 +368,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
               question: prompt,
               prompt,
               imagePath,
+              imageHint,
               options,
               correctIndex,
               correctAnswerDisplay,
@@ -335,15 +401,18 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     levelId: string
     questionId: string
     prompt: string
+    imagePath: string
+    imageHint: string
     correctAnswerDisplay: string
     acceptedAnswers: string[]
   }): Promise<string[] | null> => {
-    const { categoryId, levelId, questionId, prompt, correctAnswerDisplay } = payload
+    const { categoryId, levelId, questionId, prompt, imagePath, imageHint, correctAnswerDisplay } =
+      payload
     const normalizedAccepted = payload.acceptedAnswers.map((item) => item.trim()).filter(Boolean)
     const promptValue = prompt.trim()
     const correctValue = correctAnswerDisplay.trim()
 
-    if (!remoteEnabled || !promptValue || !correctValue) {
+    if (!promptValue || !correctValue) {
       return null
     }
 
@@ -361,20 +430,30 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       return null
     }
 
-    const generatedOptions = await generateRemoteQuestionChoices({
-      categoryTitle: currentCategory.title,
-      levelTitle: currentLevel.title,
-      questionPrompt: promptValue,
-      correctAnswer: correctValue,
-      acceptedAnswers,
-    })
+    const generatedOptions =
+      remoteEnabled
+        ? await generateRemoteQuestionChoices({
+            categoryTitle: currentCategory.title,
+            levelTitle: currentLevel.title,
+            questionTitle: currentQuestion.question || currentQuestion.prompt,
+            questionPrompt: promptValue,
+            imagePath: imagePath || currentQuestion.imagePath,
+            imageHint: imageHint || currentQuestion.imageHint || '',
+            correctAnswer: correctValue,
+            acceptedAnswers,
+          })
+        : null
 
-    if (!generatedOptions) {
-      return null
-    }
+    const rawOptions =
+      generatedOptions ??
+      buildLocalChoiceFallback({
+        level: currentLevel,
+        questionId,
+        correctAnswer: correctValue,
+      })
 
     const normalizedCorrect = normalizeAnswer(correctValue)
-    const wrongOptions = generatedOptions
+    const wrongOptions = rawOptions
       .map((option) => option.trim())
       .filter(Boolean)
       .filter((option, index, options) => {
@@ -385,7 +464,19 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       .slice(0, 3)
 
     if (wrongOptions.length < 3) {
-      return null
+      const complement = ['Alternativa A', 'Alternativa B', 'Alternativa C', 'Alternativa D']
+      for (const item of complement) {
+        if (wrongOptions.length >= 3) {
+          break
+        }
+        const normalized = normalizeAnswer(item)
+        if (
+          normalized !== normalizedCorrect &&
+          !wrongOptions.some((option) => normalizeAnswer(option) === normalized)
+        ) {
+          wrongOptions.push(item)
+        }
+      }
     }
 
     const nextChoiceOptions = [correctValue, ...wrongOptions].sort(() => Math.random() - 0.5)
@@ -401,6 +492,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
               ...question,
               question: promptValue,
               prompt: promptValue,
+              imageHint: imageHint || currentQuestion.imageHint || '',
               correctAnswerDisplay: correctValue,
               acceptedAnswers,
               options: nextChoiceOptions,
@@ -423,9 +515,51 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       }),
     )
 
-    await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    if (remoteEnabled) {
+      await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    }
 
     return nextChoiceOptions
+  }
+
+  const handleSuggestQuestionImages = async (payload: {
+    categoryId: string
+    levelId: string
+    questionId: string
+    prompt: string
+    imagePath: string
+    imageHint: string
+  }): Promise<QuestionImageSuggestion[] | null> => {
+    if (!remoteEnabled) {
+      return null
+    }
+
+    const { categoryId, levelId, questionId, prompt, imagePath, imageHint } = payload
+    const category = categories.find((item) => item.id === categoryId)
+    const level = category?.levels.find((item) => item.id === levelId)
+    const question = level?.questions.find((item) => item.id === questionId)
+
+    if (!category || !level || !question) {
+      return null
+    }
+
+    const questionPrompt = prompt.trim() || question.prompt || question.question
+    const questionHint = imageHint.trim() || question.imageHint || ''
+    const questionImagePath = imagePath.trim() || question.imagePath || ''
+
+    if (!questionPrompt && !questionHint) {
+      return null
+    }
+
+    return suggestRemoteQuestionImages({
+      categoryTitle: category.title,
+      levelTitle: level.title,
+      questionTitle: question.question || question.prompt,
+      questionPrompt,
+      imageHint: questionHint,
+      imagePath: questionImagePath,
+      limit: 8,
+    })
   }
 
   return {
@@ -437,5 +571,6 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     handleToggleLevelPublished,
     handleUpdateQuestion,
     handleGenerateQuestionChoices,
+    handleSuggestQuestionImages,
   }
 }

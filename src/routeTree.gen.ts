@@ -15,6 +15,7 @@ import { Route as MyQuizzesRouteImport } from './routes/my-quizzes'
 import { Route as FinalRouteImport } from './routes/final'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as BeaRouteImport } from './routes/bea'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RespondResultRouteImport } from './routes/respond.result'
 import { Route as CategoriesCategoryIdLevelsRouteImport } from './routes/categories.$categoryId.levels'
@@ -51,6 +52,11 @@ const BuilderRoute = BuilderRouteImport.update({
   path: '/builder',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeaRoute = BeaRouteImport.update({
+  id: '/bea',
+  path: '/bea',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -82,6 +88,7 @@ const CategoriesCategoryIdLevelsLevelIdQuizRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bea': typeof BeaRoute
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bea': typeof BeaRoute
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
@@ -109,6 +117,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bea': typeof BeaRoute
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/bea'
     | '/builder'
     | '/categories'
     | '/final'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/bea'
     | '/builder'
     | '/categories'
     | '/final'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/bea'
     | '/builder'
     | '/categories'
     | '/final'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BeaRoute: typeof BeaRoute
   BuilderRoute: typeof BuilderRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   FinalRoute: typeof FinalRoute
@@ -215,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/builder'
       fullPath: '/builder'
       preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bea': {
+      id: '/bea'
+      path: '/bea'
+      fullPath: '/bea'
+      preLoaderRoute: typeof BeaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -287,6 +307,7 @@ const CategoriesRouteWithChildren = CategoriesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BeaRoute: BeaRoute,
   BuilderRoute: BuilderRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   FinalRoute: FinalRoute,
