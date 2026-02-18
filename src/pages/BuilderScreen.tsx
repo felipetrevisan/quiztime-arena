@@ -33,6 +33,12 @@ interface BuilderScreenProps {
     timingMode: TimingMode,
     answerMode: AnswerMode,
   ) => void | Promise<void>
+  onUpdateLevel: (
+    categoryId: string,
+    levelId: string,
+    levelTitle: string,
+    levelDescription: string,
+  ) => Promise<boolean>
   onUpdateQuestion: (payload: {
     categoryId: string
     levelId: string
@@ -91,6 +97,7 @@ export const BuilderScreen = ({
   onBackgroundUpload,
   onAddCategory,
   onAddLevel,
+  onUpdateLevel,
   onUpdateQuestion,
   onGenerateQuestionChoices,
   onSuggestQuestionImages,
@@ -157,6 +164,7 @@ export const BuilderScreen = ({
             section={activeTab}
             onAddCategory={onAddCategory}
             onAddLevel={onAddLevel}
+            onUpdateLevel={onUpdateLevel}
             onUpdateQuestion={onUpdateQuestion}
             onGenerateQuestionChoices={onGenerateQuestionChoices}
             onSuggestQuestionImages={onSuggestQuestionImages}

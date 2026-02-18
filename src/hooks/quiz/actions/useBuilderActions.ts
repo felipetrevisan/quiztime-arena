@@ -261,6 +261,47 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
   }
 
+  const handleUpdateLevel = async (
+    categoryId: string,
+    levelId: string,
+    levelTitle: string,
+    levelDescription: string,
+  ): Promise<boolean> => {
+    const currentCategory = categories.find((category) => category.id === categoryId)
+    const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
+    const levelPosition = currentCategory?.levels.findIndex((level) => level.id === levelId) ?? -1
+
+    if (!currentCategory || !currentLevel || !levelTitle.trim()) {
+      return false
+    }
+
+    const nextLevel: Level = {
+      ...currentLevel,
+      title: levelTitle.trim(),
+      description: levelDescription.trim() || currentLevel.description,
+    }
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== categoryId) {
+          return category
+        }
+
+        return {
+          ...category,
+          levels: category.levels.map((level) => (level.id === levelId ? nextLevel : level)),
+        }
+      }),
+    )
+
+    if (!remoteEnabled) {
+      return true
+    }
+
+    await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    return true
+  }
+
   const handleDeleteLevel = async (categoryId: string, levelId: string): Promise<boolean> => {
     const currentCategory = categories.find((category) => category.id === categoryId)
     if (!currentCategory) {
@@ -566,6 +607,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     handleQuestionImageUpload,
     handleAddCategory,
     handleAddLevel,
+    handleUpdateLevel,
     handleDeleteLevel,
     handleToggleLevelPublished,
     handleUpdateQuestion,

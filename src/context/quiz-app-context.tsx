@@ -90,6 +90,12 @@ export interface QuizAppContextValue {
     timingMode: TimingMode,
     answerMode: AnswerMode,
   ) => void
+  handleUpdateLevel: (
+    categoryId: string,
+    levelId: string,
+    levelTitle: string,
+    levelDescription: string,
+  ) => Promise<boolean>
   handleDeleteLevel: (categoryId: string, levelId: string) => Promise<boolean>
   handleToggleLevelPublished: (
     categoryId: string,

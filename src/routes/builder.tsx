@@ -14,6 +14,7 @@ function BuilderRoute() {
     goHome,
     handleAddCategory,
     handleAddLevel,
+    handleUpdateLevel,
     handleBackgroundUpload,
     handleGenerateQuestionChoices,
     handleQuestionImageUpload,
@@ -40,6 +41,7 @@ function BuilderRoute() {
       onBackgroundUpload={handleBackgroundUpload}
       onAddCategory={handleAddCategory}
       onAddLevel={handleAddLevel}
+      onUpdateLevel={handleUpdateLevel}
       onUpdateQuestion={handleUpdateQuestion}
       onGenerateQuestionChoices={handleGenerateQuestionChoices}
       onSuggestQuestionImages={handleSuggestQuestionImages}

@@ -25,6 +25,12 @@ interface BuilderPanelProps {
     timingMode: TimingMode,
     answerMode: AnswerMode,
   ) => void | Promise<void>
+  onUpdateLevel: (
+    categoryId: string,
+    levelId: string,
+    levelTitle: string,
+    levelDescription: string,
+  ) => Promise<boolean>
   onUpdateQuestion: (payload: {
     categoryId: string
     levelId: string
@@ -81,6 +87,7 @@ export const BuilderPanel = ({
   section,
   onAddCategory,
   onAddLevel,
+  onUpdateLevel,
   onUpdateQuestion,
   onGenerateQuestionChoices,
   onSuggestQuestionImages,
@@ -109,6 +116,10 @@ export const BuilderPanel = ({
   const [suggestingImages, setSuggestingImages] = useState(false)
   const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(null)
   const [imageSuggestions, setImageSuggestions] = useState<QuestionImageSuggestion[]>([])
+  const [editLevelCategoryId, setEditLevelCategoryId] = useState(categories[0]?.id ?? '')
+  const [editLevelId, setEditLevelId] = useState(categories[0]?.levels[0]?.id ?? '')
+  const [editLevelTitle, setEditLevelTitle] = useState('')
+  const [editLevelDescription, setEditLevelDescription] = useState('')
 
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ id: category.id, label: category.title })),
@@ -118,6 +129,10 @@ export const BuilderPanel = ({
   const levelOptions = useMemo(
     () => categories.find((category) => category.id === questionCategoryId)?.levels ?? [],
     [categories, questionCategoryId],
+  )
+  const editLevelOptions = useMemo(
+    () => categories.find((category) => category.id === editLevelCategoryId)?.levels ?? [],
+    [categories, editLevelCategoryId],
   )
 
   const questionOptions = useMemo(
@@ -133,6 +148,10 @@ export const BuilderPanel = ({
   const selectedQuestion = useMemo(
     () => questionOptions.find((question) => question.id === questionId) ?? null,
     [questionId, questionOptions],
+  )
+  const selectedEditLevel = useMemo(
+    () => editLevelOptions.find((level) => level.id === editLevelId) ?? null,
+    [editLevelId, editLevelOptions],
   )
 
   useEffect(() => {
@@ -175,7 +194,33 @@ export const BuilderPanel = ({
     if (nextQuestionId !== questionId) {
       setQuestionId(nextQuestionId)
     }
-  }, [categories, categoryId, questionCategoryId, questionId, questionLevelId])
+
+    const nextEditCategoryId = categories.some((category) => category.id === editLevelCategoryId)
+      ? editLevelCategoryId
+      : categories[0].id
+
+    if (nextEditCategoryId !== editLevelCategoryId) {
+      setEditLevelCategoryId(nextEditCategoryId)
+    }
+
+    const nextEditLevels =
+      categories.find((category) => category.id === nextEditCategoryId)?.levels ?? []
+    const nextEditLevelId = nextEditLevels.some((level) => level.id === editLevelId)
+      ? editLevelId
+      : (nextEditLevels[0]?.id ?? '')
+
+    if (nextEditLevelId !== editLevelId) {
+      setEditLevelId(nextEditLevelId)
+    }
+  }, [
+    categories,
+    categoryId,
+    editLevelCategoryId,
+    editLevelId,
+    questionCategoryId,
+    questionId,
+    questionLevelId,
+  ])
 
   useEffect(() => {
     if (!selectedQuestion) {
@@ -207,6 +252,17 @@ export const BuilderPanel = ({
     setAcceptedAnswersInput(selectedQuestion.acceptedAnswers.join(', '))
     setImageSuggestions([])
   }, [selectedQuestion])
+
+  useEffect(() => {
+    if (!selectedEditLevel) {
+      setEditLevelTitle('')
+      setEditLevelDescription('')
+      return
+    }
+
+    setEditLevelTitle(selectedEditLevel.title)
+    setEditLevelDescription(selectedEditLevel.description)
+  }, [selectedEditLevel])
 
   const showCategorySection = !section || section === 'category'
   const showLevelSection = !section || section === 'level'
@@ -428,6 +484,67 @@ export const BuilderPanel = ({
           >
             Adicionar nivel
           </Button>
+
+          <div className="mt-3 space-y-2 rounded-xl border border-white/15 bg-black/25 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+              Editar nivel
+            </p>
+            <Select
+              value={editLevelCategoryId}
+              onChange={(event) => setEditLevelCategoryId(event.target.value)}
+              aria-label="Categoria do nivel para editar"
+            >
+              {categoryOptions.map((option) => (
+                <option key={option.id} value={option.id} className="bg-slate-900">
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={editLevelId}
+              onChange={(event) => setEditLevelId(event.target.value)}
+              aria-label="Nivel para editar"
+            >
+              {editLevelOptions.map((level) => (
+                <option key={level.id} value={level.id} className="bg-slate-900">
+                  {level.title}
+                </option>
+              ))}
+            </Select>
+            <Input
+              value={editLevelTitle}
+              onChange={(event) => setEditLevelTitle(event.target.value)}
+              placeholder="Novo titulo do nivel"
+            />
+            <Input
+              value={editLevelDescription}
+              onChange={(event) => setEditLevelDescription(event.target.value)}
+              placeholder="Nova descricao"
+            />
+            <Button
+              type="button"
+              onClick={async () => {
+                if (!editLevelCategoryId || !editLevelId || !editLevelTitle.trim()) {
+                  return
+                }
+
+                const saved = await onUpdateLevel(
+                  editLevelCategoryId,
+                  editLevelId,
+                  editLevelTitle.trim(),
+                  editLevelDescription.trim(),
+                )
+
+                setFeedback(
+                  saved ? 'Nivel atualizado com sucesso.' : 'Nao foi possivel atualizar o nivel.',
+                )
+              }}
+              className="w-full tracking-[0.14em]"
+              disabled={!editLevelId || !editLevelTitle.trim()}
+            >
+              Salvar alteracoes do nivel
+            </Button>
+          </div>
         </div>
       )}
 

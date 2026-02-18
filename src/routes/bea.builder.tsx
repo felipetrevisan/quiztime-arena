@@ -14,6 +14,7 @@ function BeaBuilderRoute() {
     goHome,
     handleAddCategory,
     handleAddLevel,
+    handleUpdateLevel,
     handleBackgroundUpload,
     handleGenerateQuestionChoices,
     handleQuestionImageUpload,
@@ -40,6 +41,7 @@ function BeaBuilderRoute() {
       onBackgroundUpload={handleBackgroundUpload}
       onAddCategory={handleAddCategory}
       onAddLevel={handleAddLevel}
+      onUpdateLevel={handleUpdateLevel}
       onUpdateQuestion={handleUpdateQuestion}
       onGenerateQuestionChoices={handleGenerateQuestionChoices}
       onSuggestQuestionImages={handleSuggestQuestionImages}
