@@ -1,3 +1,7 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import type {
   AnswerMode,
   Category,
@@ -5,10 +9,6 @@ import type {
   QuestionImageSuggestion,
   TimingMode,
 } from '@/types/quiz'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { useEffect, useMemo, useState } from 'react'
 
 export type BuilderPanelSection = 'category' | 'level' | 'answer'
@@ -353,10 +353,7 @@ export const BuilderPanel = ({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             Novo nivel
           </p>
-          <Select
-            value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-          >
+          <Select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
             {categoryOptions.map((option) => (
               <option key={option.id} value={option.id} className="bg-slate-900">
                 {option.label}
@@ -461,10 +458,7 @@ export const BuilderPanel = ({
             ))}
           </Select>
 
-          <Select
-            value={questionId}
-            onChange={(event) => setQuestionId(event.target.value)}
-          >
+          <Select value={questionId} onChange={(event) => setQuestionId(event.target.value)}>
             {questionOptions.map((question, index) => (
               <option key={question.id} value={question.id} className="bg-slate-900">
                 {selectedLevel?.mode === 'blank'

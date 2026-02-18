@@ -186,7 +186,12 @@ const buildHeuristicQueries = (payload: SuggestQuestionImagesPayload): QuerySugg
   const levelTitle = payload.levelTitle?.trim() ?? ''
   const imageHint = payload.imageHint?.trim() ?? ''
   const imagePath = payload.imagePath?.trim() ?? ''
-  const fileName = imagePath.split('?')[0].split('/').pop()?.replace(/\.[a-z0-9]+$/i, '') ?? ''
+  const fileName =
+    imagePath
+      .split('?')[0]
+      .split('/')
+      .pop()
+      ?.replace(/\.[a-z0-9]+$/i, '') ?? ''
 
   const candidates = uniqueStrings([
     imageHint,
@@ -306,13 +311,11 @@ const fetchPexelsImages = async (params: {
   query: string
   limit: number
 }): Promise<QuestionImageSuggestion[]> => {
-  const endpoint =
-    'https://api.pexels.com/v1/search?' +
-    new URLSearchParams({
-      per_page: String(Math.min(Math.max(params.limit, 1), 30)),
-      page: '1',
-      query: params.query,
-    }).toString()
+  const endpoint = `https://api.pexels.com/v1/search?${new URLSearchParams({
+    per_page: String(Math.min(Math.max(params.limit, 1), 30)),
+    page: '1',
+    query: params.query,
+  }).toString()}`
 
   const response = await fetch(endpoint, {
     headers: {
@@ -342,10 +345,7 @@ const fetchPexelsImages = async (params: {
   return photos
     .map((photo) => {
       const imageUrl =
-        photo.src?.large?.trim() ||
-        photo.src?.medium?.trim() ||
-        photo.src?.original?.trim() ||
-        ''
+        photo.src?.large?.trim() || photo.src?.medium?.trim() || photo.src?.original?.trim() || ''
       if (!imageUrl) return null
 
       const thumbUrl = photo.src?.small?.trim() || photo.src?.tiny?.trim() || imageUrl
@@ -365,19 +365,17 @@ const fetchWikimediaImages = async (params: {
   query: string
   limit: number
 }): Promise<QuestionImageSuggestion[]> => {
-  const endpoint =
-    'https://commons.wikimedia.org/w/api.php?' +
-    new URLSearchParams({
-      action: 'query',
-      format: 'json',
-      origin: '*',
-      generator: 'search',
-      gsrsearch: `${params.query} filetype:bitmap`,
-      gsrlimit: String(Math.min(Math.max(params.limit, 1), 20)),
-      prop: 'imageinfo',
-      iiprop: 'url|extmetadata',
-      iiurlwidth: '640',
-    }).toString()
+  const endpoint = `https://commons.wikimedia.org/w/api.php?${new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    origin: '*',
+    generator: 'search',
+    gsrsearch: `${params.query} filetype:bitmap`,
+    gsrlimit: String(Math.min(Math.max(params.limit, 1), 20)),
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata',
+    iiurlwidth: '640',
+  }).toString()}`
 
   const response = await fetch(endpoint)
   if (!response.ok) {

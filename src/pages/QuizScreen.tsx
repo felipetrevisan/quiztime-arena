@@ -197,6 +197,7 @@ export const QuizScreen = ({
     ? [level.questions[currentQuestionIndex]].filter(Boolean)
     : level.questions
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: its ok here
   useEffect(() => {
     setElapsedMs(0)
     setCurrentQuestionIndex(0)

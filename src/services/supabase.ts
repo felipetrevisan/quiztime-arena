@@ -1,10 +1,4 @@
-import type {
-  Category,
-  Level,
-  Question,
-  QuestionImageSuggestion,
-  RankingEntry,
-} from '@/types/quiz'
+import type { Category, Level, Question, QuestionImageSuggestion, RankingEntry } from '@/types/quiz'
 import { isSupabaseEnabled, supabase } from '@/utils/supabase'
 
 interface CategoryRow {

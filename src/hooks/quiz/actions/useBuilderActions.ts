@@ -44,7 +44,7 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     setCategories,
   } = params
 
-  const shuffle = <T,>(items: T[]): T[] => {
+  const shuffle = <T>(items: T[]): T[] => {
     const next = [...items]
     for (let index = next.length - 1; index > 0; index -= 1) {
       const swapIndex = Math.floor(Math.random() * (index + 1))
@@ -430,19 +430,18 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       return null
     }
 
-    const generatedOptions =
-      remoteEnabled
-        ? await generateRemoteQuestionChoices({
-            categoryTitle: currentCategory.title,
-            levelTitle: currentLevel.title,
-            questionTitle: currentQuestion.question || currentQuestion.prompt,
-            questionPrompt: promptValue,
-            imagePath: imagePath || currentQuestion.imagePath,
-            imageHint: imageHint || currentQuestion.imageHint || '',
-            correctAnswer: correctValue,
-            acceptedAnswers,
-          })
-        : null
+    const generatedOptions = remoteEnabled
+      ? await generateRemoteQuestionChoices({
+          categoryTitle: currentCategory.title,
+          levelTitle: currentLevel.title,
+          questionTitle: currentQuestion.question || currentQuestion.prompt,
+          questionPrompt: promptValue,
+          imagePath: imagePath || currentQuestion.imagePath,
+          imageHint: imageHint || currentQuestion.imageHint || '',
+          correctAnswer: correctValue,
+          acceptedAnswers,
+        })
+      : null
 
     const rawOptions =
       generatedOptions ??

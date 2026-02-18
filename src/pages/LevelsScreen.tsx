@@ -97,6 +97,7 @@ export const LevelsScreen = ({
                   hidden: { opacity: 0, y: 14 },
                   show: { opacity: 1, y: 0 },
                 }}
+                // biome-ignore lint/a11y/useSemanticElements: role is ok
                 role="button"
                 tabIndex={0}
                 onClick={(event) => handleCardOpen(event, level.id)}

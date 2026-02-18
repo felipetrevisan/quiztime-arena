@@ -360,10 +360,7 @@ const summarizeImagePath = (imagePath: string): string => {
   const withoutQuery = trimmed.split('?')[0]
   const rawFileName = withoutQuery.split('/').pop() ?? ''
   const fileName = rawFileName.replace(/\.[a-z0-9]+$/i, '')
-  const normalizedFileName = fileName
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const normalizedFileName = fileName.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
 
   if (!normalizedFileName) {
     return ''
@@ -422,8 +419,14 @@ const buildFallbackOptions = (params: {
   questionTitle?: string
   imageHint?: string
 }): string[] => {
-  const { correctAnswer, acceptedAnswers, rawOptions = [], questionPrompt, questionTitle, imageHint } =
-    params
+  const {
+    correctAnswer,
+    acceptedAnswers,
+    rawOptions = [],
+    questionPrompt,
+    questionTitle,
+    imageHint,
+  } = params
   const normalizedCorrect = normalize(correctAnswer)
   const contextKeywords = extractKeywords(
     [questionTitle ?? '', imageHint ?? '', questionPrompt ?? ''].join(' ').trim(),
@@ -567,8 +570,7 @@ Deno.serve(async (request) => {
     null,
     2,
   )
-  const providerOrder: AiProvider[] =
-    provider === 'auto' ? ['gemini', 'openai'] : [provider]
+  const providerOrder: AiProvider[] = provider === 'auto' ? ['gemini', 'openai'] : [provider]
   console.log('[generate-question-options] request received', {
     requestId,
     requesterEmail: maskEmail(requesterEmail),
