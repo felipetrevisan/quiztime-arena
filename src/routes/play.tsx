@@ -2,6 +2,7 @@ import { useQuizApp } from '@/context/quiz-app-context'
 import { DuelPlayScreen } from '@/pages/DuelPlayScreen'
 import { PublishedQuizzesScreen } from '@/pages/PublishedQuizzesScreen'
 import { createRemoteDuelSession } from '@/services/supabase'
+import { notifyError, notifyInfo, notifySuccess } from '@/utils/feedback'
 import { copyText } from '@/utils/share'
 import { createFileRoute, useLocation, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
@@ -21,7 +22,10 @@ function PlayRoute() {
   }, [location.searchStr])
 
   const createDuel = async (categoryId: string, levelId: string) => {
-    if (!session) return
+    if (!session) {
+      notifyError('Faca login para criar um duelo.')
+      return
+    }
 
     const key = `${categoryId}:${levelId}`
     setCreatingDuelKey(key)
@@ -46,8 +50,15 @@ function PlayRoute() {
 
     if (duelSessionId) {
       const duelLink = `${window.location.origin}/play?duel=${encodeURIComponent(duelSessionId)}`
-      void copyText(duelLink)
+      const copied = await copyText(duelLink)
+      if (copied) {
+        notifySuccess('Link do duelo copiado.')
+      } else {
+        notifyInfo('Duelo criado. Copie o link manualmente.')
+      }
       window.location.assign(`/play?duel=${encodeURIComponent(duelSessionId)}`)
+    } else {
+      notifyError('Nao foi possivel criar o duelo. Tente novamente.')
     }
 
     setCreatingDuelKey(null)

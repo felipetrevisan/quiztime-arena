@@ -1,12 +1,36 @@
 import { AnswerSheet } from '@/components/AnswerSheet'
+import { FeedbackToaster } from '@/components/FeedbackToaster'
 import { Frame } from '@/components/Frame'
 import { Header } from '@/components/Header'
 import { QuizAppProvider } from '@/context/quiz-app-context'
 import { screenVariants, useQuizAppController } from '@/hooks/useQuizAppController'
 import { AuthScreen } from '@/pages/AuthScreen'
+import { notifyError, subscribeFeedback } from '@/utils/feedback'
 import { Outlet } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+interface ToastItem {
+  id: string
+  message: string
+  tone: 'info' | 'success' | 'error'
+}
+
+const extractErrorFeedbackMessage = (args: unknown[]): string | null => {
+  const first = args[0]
+  if (typeof first === 'string') {
+    const message = first.trim()
+    if (message) {
+      return message
+    }
+  }
+
+  if (first instanceof Error) {
+    return first.message.trim() || null
+  }
+
+  return null
+}
 
 function App() {
   const {
@@ -35,6 +59,8 @@ function App() {
     config,
     showSignOutButton,
   } = useQuizAppController()
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const lastConsoleErrorRef = useRef<{ message: string; at: number } | null>(null)
 
   const isPublishedLevelFlow =
     (contextValue.screen === 'quiz' ||
@@ -72,6 +98,46 @@ function App() {
     contextValue.goHome()
   }, [contextValue.goHome, contextValue.goPlay, contextValue.screen, shouldRedirectNonAdmin])
 
+  useEffect(() => {
+    const unsubscribe = subscribeFeedback(({ message, tone, durationMs }) => {
+      const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+      setToasts((previous) => [...previous, { id, message, tone }].slice(-4))
+
+      window.setTimeout(() => {
+        setToasts((previous) => previous.filter((item) => item.id !== id))
+      }, durationMs)
+    })
+
+    return unsubscribe
+  }, [])
+
+  useEffect(() => {
+    const originalError = console.error.bind(console)
+
+    console.error = (...args: unknown[]) => {
+      originalError(...args)
+
+      const message = extractErrorFeedbackMessage(args)
+      if (!message) {
+        return
+      }
+
+      const now = Date.now()
+      const previous = lastConsoleErrorRef.current
+      if (previous && previous.message === message && now - previous.at < 1500) {
+        return
+      }
+
+      lastConsoleErrorRef.current = { message, at: now }
+      notifyError(message)
+    }
+
+    return () => {
+      console.error = originalError
+    }
+  }, [])
+
   const protectedContent = (() => {
     if (!requiresAuth) {
       return <Outlet />
@@ -106,6 +172,12 @@ function App() {
 
   return (
     <QuizAppProvider value={contextValue}>
+      <FeedbackToaster
+        toasts={toasts}
+        onDismiss={(id) => {
+          setToasts((previous) => previous.filter((item) => item.id !== id))
+        }}
+      />
       <div className="flex min-h-screen items-center justify-center bg-[#080915] px-3 py-4 sm:px-6">
         <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
           {showSignOutButton && (
