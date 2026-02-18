@@ -167,6 +167,7 @@ export const QuizScreen = ({
   onTakeScreenshot,
 }: QuizScreenProps) => {
   const [isCapturing, setIsCapturing] = useState(false)
+  const [profileExpanded, setProfileExpanded] = useState(false)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const total = level.questions.length
@@ -233,7 +234,9 @@ export const QuizScreen = ({
 
   return (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div
+        className={`${isResponderMode ? 'mb-2' : 'mb-3'} flex items-center justify-between gap-2`}
+      >
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-white/75">
             {level.title}
@@ -259,44 +262,62 @@ export const QuizScreen = ({
       <ProgressBar value={progress} accentColor={theme.accentColor} />
 
       {isResponderMode && (
-        <div className="mt-3 rounded-2xl border border-white/20 bg-black/30 p-3">
-          <div className="flex items-center gap-3">
-            <img
-              src={responderAvatarDataUrl ?? '/assets/cartoons/template.svg'}
-              alt="Avatar do jogador"
-              className="h-14 w-14 rounded-full border border-white/30 object-cover"
-            />
-            <label className="cursor-pointer rounded-lg border border-white/30 bg-black/35 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
-              Upload avatar
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (!file) return
-                  onResponderAvatarUpload?.(file)
-                }}
-              />
-            </label>
-          </div>
-          <label
-            htmlFor="responder-name"
-            className="mt-3 block text-xs font-semibold uppercase tracking-[0.12em] text-white/75"
+        <div className="mt-2 rounded-2xl border border-white/20 bg-black/30 p-2">
+          <button
+            type="button"
+            aria-expanded={profileExpanded}
+            onClick={() => setProfileExpanded((previous) => !previous)}
+            className="flex w-full items-center justify-between rounded-xl border border-white/25 bg-black/35 px-3 py-2 text-left"
           >
-            Nome de quem esta jogando
-          </label>
-          <input
-            id="responder-name"
-            value={responderName}
-            onChange={(event) => onResponderNameChange?.(event.target.value)}
-            placeholder="Ex: Ana"
-            className="mt-2 w-full rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-sm text-white outline-none"
-          />
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/90">
+              Perfil do jogador
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/70">
+              {profileExpanded ? 'Ocultar' : 'Editar'}
+            </span>
+          </button>
+
+          {profileExpanded && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2">
+                <img
+                  src={responderAvatarDataUrl ?? '/assets/cartoons/template.svg'}
+                  alt="Avatar do jogador"
+                  className="h-10 w-10 rounded-full border border-white/30 object-cover"
+                />
+                <label className="cursor-pointer rounded-lg border border-white/30 bg-black/35 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                  Upload avatar
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file) return
+                      onResponderAvatarUpload?.(file)
+                    }}
+                  />
+                </label>
+              </div>
+              <label
+                htmlFor="responder-name"
+                className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75"
+              >
+                Nome de quem esta jogando
+              </label>
+              <input
+                id="responder-name"
+                value={responderName}
+                onChange={(event) => onResponderNameChange?.(event.target.value)}
+                placeholder="Ex: Ana"
+                className="mt-1.5 w-full rounded-xl border border-white/30 bg-black/25 px-3 py-2 text-sm text-white outline-none"
+              />
+            </div>
+          )}
         </div>
       )}
 
-      <div className="mt-3 min-h-0 flex-1 overflow-hidden">
+      <div className={`${isResponderMode ? 'mt-2' : 'mt-3'} min-h-0 flex-1 overflow-hidden`}>
         <motion.div
           className="h-full space-y-3 overflow-y-auto pr-1 [overscroll-behavior:contain]"
           style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}

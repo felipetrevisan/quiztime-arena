@@ -127,6 +127,7 @@ function App() {
               title={headerTitle}
               subtitle={headerSubtitle}
               headerColor={activeTheme.headerColor}
+              compact={contextValue.screen === 'quiz' && isResponderMode}
             />
             <AnimatePresence mode="wait">
               <motion.div

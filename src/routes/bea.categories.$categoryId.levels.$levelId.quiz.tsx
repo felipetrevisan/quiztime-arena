@@ -26,8 +26,10 @@ function BeaQuizRoute() {
     handleFinishLevel,
     handleQuestionImageUpload,
     handleResponderAvatarUpload,
+    isAdmin,
     isResponderMode,
     openLevel,
+    playPublishedLevel,
     responderAvatarDataUrl,
     responderName,
     results,
@@ -47,7 +49,7 @@ function BeaQuizRoute() {
   const isPublishedPlayMode = Boolean(sharedQuiz?.quizId.startsWith('published-'))
 
   useEffect(() => {
-    if (accessMode !== 'admin') {
+    if (accessMode !== 'admin' || !isAdmin) {
       return
     }
 
@@ -61,6 +63,7 @@ function BeaQuizRoute() {
     activeLevel,
     accessMode,
     categoryId,
+    isAdmin,
     isResponderMode,
     levelId,
     openLevel,
@@ -68,8 +71,27 @@ function BeaQuizRoute() {
     selectedLevelId,
   ])
 
+  useEffect(() => {
+    if (isAdmin || isResponderMode || !routeCategory || !routeLevel?.isPublished) {
+      return
+    }
+
+    const expectedQuizId = `published-${routeCategory.id}-${routeLevel.id}`
+    if (sharedQuiz?.quizId === expectedQuizId) {
+      return
+    }
+
+    playPublishedLevel(routeCategory.id, routeLevel.id)
+  }, [isAdmin, isResponderMode, playPublishedLevel, routeCategory, routeLevel, sharedQuiz?.quizId])
+
   if (!levelToRender) {
-    return null
+    return (
+      <section className="flex h-full min-h-0 flex-1 items-center justify-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
+          Carregando nivel...
+        </p>
+      </section>
+    )
   }
 
   const handleTakeScreenshot = async () => {

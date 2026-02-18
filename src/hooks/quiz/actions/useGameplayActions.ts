@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { flushSync } from 'react-dom'
 
 import type {
   AppConfig,
@@ -180,29 +181,31 @@ export const useGameplayActions = (params: UseGameplayActionsParams) => {
       return
     }
 
-    resetQuizBuffers()
+    flushSync(() => {
+      resetQuizBuffers()
 
-    setSharedQuiz({
-      version: 1,
-      quizId: `published-${category.id}-${level.id}`,
-      categoryId: category.id,
-      categoryTitle: category.title,
-      levelId: level.id,
-      title: config.title,
-      subtitle: config.subtitle,
-      themeId: config.themeId,
-      level,
+      setSharedQuiz({
+        version: 1,
+        quizId: `published-${category.id}-${level.id}`,
+        categoryId: category.id,
+        categoryTitle: category.title,
+        levelId: level.id,
+        title: config.title,
+        subtitle: config.subtitle,
+        themeId: config.themeId,
+        level,
+      })
+      setSelectedCategoryId(category.id)
+      setSelectedLevelId(level.id)
+      setQuizStartedAtMs(Date.now())
+
+      const draft = drafts[levelKey(category.id, level.id)]
+      if (draft) {
+        setAnswers(draft.answers)
+        setResults(draft.results)
+        setCorrected(draft.corrected)
+      }
     })
-    setSelectedCategoryId(category.id)
-    setSelectedLevelId(level.id)
-    setQuizStartedAtMs(Date.now())
-
-    const draft = drafts[levelKey(category.id, level.id)]
-    if (draft) {
-      setAnswers(draft.answers)
-      setResults(draft.results)
-      setCorrected(draft.corrected)
-    }
 
     goQuiz(category.id, level.id)
   }
