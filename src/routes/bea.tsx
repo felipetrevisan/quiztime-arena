@@ -1,8 +1,6 @@
 import { useQuizApp } from '@/context/quiz-app-context'
 import { HomeScreen } from '@/pages/HomeScreen'
-import { setActivePersonaAlias } from '@/utils/persona'
 import { Outlet, createFileRoute, useMatchRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
 
 export const Route = createFileRoute('/bea')({
   component: BeaAliasRoute,
@@ -18,10 +16,6 @@ function BeaAliasRoute() {
       fuzzy: false,
     }),
   )
-
-  useEffect(() => {
-    setActivePersonaAlias('bea')
-  }, [])
 
   if (!isBeaHome) {
     return <Outlet />

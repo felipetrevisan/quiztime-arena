@@ -73,3 +73,13 @@ export const setActivePersonaAlias = (alias: string): void => {
 
   storage.setItem(PERSONA_STORAGE_KEY, normalized)
 }
+
+export const clearActivePersonaAlias = (): void => {
+  const storage = getStorage()
+  if (!storage) {
+    return
+  }
+
+  storage.removeItem(PERSONA_STORAGE_KEY)
+  getLegacyStorage()?.removeItem(PERSONA_STORAGE_KEY)
+}

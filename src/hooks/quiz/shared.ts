@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { AppConfig, Category, RankingEntry, Screen } from '@/types/quiz'
 
 export const defaultConfig: AppConfig = {
-  title: 'BEATRIZ PERAZZO',
+  title: 'QUIZTIME ARENA',
   subtitle: 'QUIZ TIME',
   themeId: 'neon-purple',
 }

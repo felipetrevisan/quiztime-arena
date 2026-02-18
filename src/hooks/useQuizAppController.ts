@@ -2,7 +2,7 @@ import type { QuizAppContextValue } from '@/context/quiz-app-context'
 import { themes } from '@/data/themes'
 import { hasRemote } from '@/services/supabase'
 import type { AccessMode, AppConfig, Level, LevelRecord, ThemeOption } from '@/types/quiz'
-import { getActivePersonaAlias, getPersonaTheme, setActivePersonaAlias } from '@/utils/persona'
+import { clearActivePersonaAlias, getPersonaTheme, setActivePersonaAlias } from '@/utils/persona'
 import { supabase } from '@/utils/supabase'
 import { buildPublicAppUrl } from '@/utils/url'
 import type { Session } from '@supabase/supabase-js'
@@ -144,12 +144,13 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     selectedCategory?.levels.findIndex((level) => level.id === selectedLevelId) ?? -1
 
   const activeLevel = sharedQuiz?.level ?? selectedLevel
+  const isBeaScoped = location.pathname === '/bea' || location.pathname.startsWith('/bea/')
   const activeTheme =
     themes.find((themeOption) => themeOption.id === (sharedQuiz?.themeId ?? config.themeId)) ??
     themes[0]
-  const activePersonaTheme = getPersonaTheme(getActivePersonaAlias())
-  const headerTitle = sharedQuiz?.title ?? activePersonaTheme?.title ?? config.title
-  const headerSubtitle = sharedQuiz?.subtitle ?? activePersonaTheme?.subtitle ?? config.subtitle
+  const activePersonaTheme = isBeaScoped ? getPersonaTheme('bea') : null
+  const headerTitle = activePersonaTheme?.title ?? sharedQuiz?.title ?? config.title
+  const headerSubtitle = activePersonaTheme?.subtitle ?? sharedQuiz?.subtitle ?? config.subtitle
 
   const userEmail = session?.user.email?.toLowerCase() ?? ''
   const isAdmin = !remoteEnabled || adminEmails.length === 0 || adminEmails.includes(userEmail)
@@ -163,10 +164,13 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
   }, [records, selectedCategory, selectedLevel])
 
   useEffect(() => {
-    if (location.pathname === '/bea' || location.pathname.startsWith('/bea/')) {
+    if (isBeaScoped) {
       setActivePersonaAlias('bea')
+      return
     }
-  }, [location.pathname])
+
+    clearActivePersonaAlias()
+  }, [isBeaScoped])
 
   const categoryTotals = useMemo(() => {
     if (!selectedCategory) {

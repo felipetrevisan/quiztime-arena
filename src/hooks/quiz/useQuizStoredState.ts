@@ -121,6 +121,22 @@ export const useQuizStoredState = (remoteEnabled: boolean) => {
     setCategories((previous) => normalizeStoredCategories(previous))
   }, [setCategories])
 
+  useEffect(() => {
+    setConfig((previous) => {
+      const isLegacyBeaTitle = previous.title.trim().toUpperCase() === 'BEATRIZ PERAZZO'
+      const isLegacySubtitle = previous.subtitle.trim().toUpperCase() === 'QUIZ TIME'
+
+      if (!isLegacyBeaTitle || !isLegacySubtitle) {
+        return previous
+      }
+
+      return {
+        ...previous,
+        title: defaultConfig.title,
+      }
+    })
+  }, [setConfig])
+
   return {
     categories,
     setCategories,
