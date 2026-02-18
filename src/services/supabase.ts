@@ -1,4 +1,13 @@
-import type { Category, Level, Question, QuestionImageSuggestion, RankingEntry } from '@/types/quiz'
+import type {
+  Category,
+  DuelEntry,
+  DuelFinalizeResult,
+  DuelSession,
+  Level,
+  Question,
+  QuestionImageSuggestion,
+  RankingEntry,
+} from '@/types/quiz'
 import { isSupabaseEnabled, supabase } from '@/utils/supabase'
 
 interface CategoryRow {
@@ -76,6 +85,42 @@ interface RankingRow {
   submitted_at: string
 }
 
+interface DuelSessionRow {
+  id: string
+  quiz_id: string
+  category_id: string
+  level_id: string
+  host_user_id: string
+  guest_user_id: string | null
+  status: 'waiting' | 'running' | 'finished' | 'cancelled'
+  started_at: string | null
+  finished_at: string | null
+  first_finished_user_id: string | null
+  first_finished_at: string | null
+  winner_user_id: string | null
+  winner_score: number | null
+  winner_duration_ms: number | null
+  created_at: string
+  updated_at: string
+}
+
+interface DuelEntryRow {
+  session_id: string
+  user_id: string
+  display_name: string
+  avatar_url: string | null
+  answers: Record<string, string> | null
+  answered_count: number
+  current_question: number
+  is_submitted: boolean
+  submitted_at: string | null
+  score: number
+  total: number
+  duration_ms: number
+  created_at: string
+  updated_at: string
+}
+
 const toQuestion = (row: QuestionRow): Question => {
   const options = (row.choice_options ?? []).slice(0, 4)
   while (options.length < 4) {
@@ -149,6 +194,42 @@ const toRankingEntry = (row: RankingRow): RankingEntry => ({
   answers: row.answers,
   results: row.results,
   submittedAt: row.submitted_at,
+})
+
+const toDuelSession = (row: DuelSessionRow): DuelSession => ({
+  id: row.id,
+  quizId: row.quiz_id,
+  categoryId: row.category_id,
+  levelId: row.level_id,
+  hostUserId: row.host_user_id,
+  guestUserId: row.guest_user_id,
+  status: row.status,
+  startedAt: row.started_at,
+  finishedAt: row.finished_at,
+  firstFinishedUserId: row.first_finished_user_id,
+  firstFinishedAt: row.first_finished_at,
+  winnerUserId: row.winner_user_id,
+  winnerScore: row.winner_score,
+  winnerDurationMs: row.winner_duration_ms,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+})
+
+const toDuelEntry = (row: DuelEntryRow): DuelEntry => ({
+  sessionId: row.session_id,
+  userId: row.user_id,
+  displayName: row.display_name,
+  avatarUrl: row.avatar_url,
+  answers: row.answers ?? {},
+  answeredCount: row.answered_count,
+  currentQuestion: row.current_question,
+  isSubmitted: row.is_submitted,
+  submittedAt: row.submitted_at,
+  score: row.score,
+  total: row.total,
+  durationMs: row.duration_ms,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
 })
 
 export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
@@ -495,6 +576,169 @@ export const saveRemoteRanking = async (entry: RankingEntry): Promise<boolean> =
   }
 
   return true
+}
+
+export const clearRemoteRankings = async (): Promise<boolean> => {
+  if (!supabase) return false
+
+  const { error } = await supabase
+    .from('rankings')
+    .delete()
+    .gte('submitted_at', '1900-01-01T00:00:00.000Z')
+
+  if (error) {
+    console.error('Erro ao limpar ranking no Supabase', error)
+    return false
+  }
+
+  return true
+}
+
+export const createRemoteDuelSession = async (payload: {
+  quizId: string
+  categoryId: string
+  levelId: string
+  displayName: string
+  avatarUrl?: string | null
+}): Promise<string | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.rpc('create_duel_session', {
+    p_quiz_id: payload.quizId,
+    p_category_id: payload.categoryId,
+    p_level_id: payload.levelId,
+    p_display_name: payload.displayName,
+    p_avatar_url: payload.avatarUrl ?? null,
+  })
+
+  if (error || typeof data !== 'string') {
+    console.error('Erro ao criar duelo', error)
+    return null
+  }
+
+  return data
+}
+
+export const joinRemoteDuelSession = async (payload: {
+  sessionId: string
+  displayName: string
+  avatarUrl?: string | null
+}): Promise<DuelSession | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.rpc('join_duel_session', {
+    p_session_id: payload.sessionId,
+    p_display_name: payload.displayName,
+    p_avatar_url: payload.avatarUrl ?? null,
+  })
+
+  if (error || !data) {
+    console.error('Erro ao entrar no duelo', error)
+    return null
+  }
+
+  return toDuelSession(data as DuelSessionRow)
+}
+
+export const fetchRemoteDuelSession = async (sessionId: string): Promise<DuelSession | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase
+    .from('duel_sessions')
+    .select(
+      'id,quiz_id,category_id,level_id,host_user_id,guest_user_id,status,started_at,finished_at,first_finished_user_id,first_finished_at,winner_user_id,winner_score,winner_duration_ms,created_at,updated_at',
+    )
+    .eq('id', sessionId)
+    .maybeSingle()
+
+  if (error || !data) {
+    if (error) {
+      console.error('Erro ao carregar sessao de duelo', error)
+    }
+    return null
+  }
+
+  return toDuelSession(data as DuelSessionRow)
+}
+
+export const fetchRemoteDuelEntries = async (sessionId: string): Promise<DuelEntry[] | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase
+    .from('duel_entries')
+    .select(
+      'session_id,user_id,display_name,avatar_url,answers,answered_count,current_question,is_submitted,submitted_at,score,total,duration_ms,created_at,updated_at',
+    )
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Erro ao carregar participantes do duelo', error)
+    return null
+  }
+
+  return ((data ?? []) as DuelEntryRow[]).map(toDuelEntry)
+}
+
+export const upsertRemoteDuelDraft = async (payload: {
+  sessionId: string
+  answers: Record<string, string>
+  answeredCount: number
+  currentQuestion: number
+}): Promise<boolean> => {
+  if (!supabase) return false
+
+  const { error } = await supabase.rpc('upsert_duel_draft', {
+    p_session_id: payload.sessionId,
+    p_answers: payload.answers,
+    p_answered_count: payload.answeredCount,
+    p_current_question: payload.currentQuestion,
+  })
+
+  if (error) {
+    console.error('Erro ao atualizar progresso do duelo', error)
+    return false
+  }
+
+  return true
+}
+
+export const finalizeRemoteDuelSubmission = async (payload: {
+  sessionId: string
+  answers: Record<string, string>
+  answeredCount: number
+  displayName: string
+  avatarUrl?: string | null
+}): Promise<DuelFinalizeResult | null> => {
+  if (!supabase) return null
+
+  const { data, error } = await supabase.rpc('finalize_duel_submission', {
+    p_session_id: payload.sessionId,
+    p_answers: payload.answers,
+    p_answered_count: payload.answeredCount,
+    p_display_name: payload.displayName,
+    p_avatar_url: payload.avatarUrl ?? null,
+  })
+
+  if (error || !data || typeof data !== 'object') {
+    console.error('Erro ao finalizar duelo', error)
+    return null
+  }
+
+  const asRecord = data as Record<string, unknown>
+  const rawSession = asRecord.session as DuelSessionRow | undefined
+  const rawEntries = asRecord.entries as DuelEntryRow[] | undefined
+  const winnerUserId = typeof asRecord.winner_user_id === 'string' ? asRecord.winner_user_id : null
+
+  if (!rawSession || !Array.isArray(rawEntries)) {
+    return null
+  }
+
+  return {
+    session: toDuelSession(rawSession),
+    entries: rawEntries.map(toDuelEntry),
+    winnerUserId,
+  }
 }
 
 export const uploadRemoteAsset = async (file: File, path: string): Promise<string | null> => {

@@ -1,10 +1,10 @@
 import { useQuizApp } from '@/context/quiz-app-context'
 import { mergeRankings } from '@/hooks/quiz/shared'
 import { RankingScreen } from '@/pages/RankingScreen'
-import { fetchRemoteRankings } from '@/services/supabase'
+import { clearRemoteRankings, fetchRemoteRankings } from '@/services/supabase'
 import { getSessionAliases } from '@/utils/user'
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export const Route = createFileRoute('/ranking')({
   component: RankingRoute,
@@ -14,6 +14,7 @@ function RankingRoute() {
   const {
     goHome,
     hasSession,
+    isAdmin,
     isRankingPreviewMode,
     rankingEntries,
     requiresAuth,
@@ -21,6 +22,24 @@ function RankingRoute() {
     setRankings,
   } = useQuizApp()
   const aliases = getSessionAliases(session)
+  const canClear = !requiresAuth || isAdmin
+  const clearScopeLabel = requiresAuth ? 'local e Supabase' : 'local'
+
+  const handleClearRankings = useCallback(async () => {
+    if (requiresAuth) {
+      if (!isAdmin) {
+        return false
+      }
+
+      const clearedRemote = await clearRemoteRankings()
+      if (!clearedRemote) {
+        return false
+      }
+    }
+
+    setRankings([])
+    return true
+  }, [isAdmin, requiresAuth, setRankings])
 
   useEffect(() => {
     if (!requiresAuth || !hasSession) {
@@ -49,8 +68,10 @@ function RankingRoute() {
       isPreviewMode={isRankingPreviewMode}
       currentUserId={session?.user.id ?? null}
       currentUserAliases={aliases}
+      canClear={canClear}
+      clearScopeLabel={clearScopeLabel}
       onBack={goHome}
-      onClear={() => setRankings([])}
+      onClear={handleClearRankings}
     />
   )
 }

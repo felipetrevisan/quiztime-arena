@@ -10,8 +10,10 @@ interface RankingScreenProps {
   isPreviewMode?: boolean
   currentUserId?: string | null
   currentUserAliases?: string[]
+  canClear?: boolean
+  clearScopeLabel?: string
   onBack: () => void
-  onClear: () => void
+  onClear: () => Promise<boolean> | boolean
 }
 
 const formatDate = (value: string): string => {
@@ -39,11 +41,15 @@ export const RankingScreen = ({
   isPreviewMode = false,
   currentUserId = null,
   currentUserAliases = [],
+  canClear = true,
+  clearScopeLabel = 'local',
   onBack,
   onClear,
 }: RankingScreenProps) => {
   const [tab, setTab] = useState<RankingTab>('normal')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [clearFeedback, setClearFeedback] = useState<string | null>(null)
   const aliasSet = useMemo(
     () => new Set(currentUserAliases.map(normalizeIdentity)),
     [currentUserAliases],
@@ -257,27 +263,45 @@ export const RankingScreen = ({
         )}
       </div>
 
-      {!isPreviewMode && (
+      {!isPreviewMode && canClear && (
         <button
           type="button"
+          disabled={clearing}
           onClick={() => setShowClearConfirm(true)}
-          className="mt-3 rounded-xl border border-rose-300/35 bg-rose-500/20 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-100"
+          className="mt-3 rounded-xl border border-rose-300/35 bg-rose-500/20 px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Limpar ranking
+          {clearing ? 'Limpando ranking...' : `Limpar ranking (${clearScopeLabel})`}
         </button>
+      )}
+      {clearFeedback && (
+        <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+          {clearFeedback}
+        </p>
       )}
 
       <AlertDialog
         open={showClearConfirm}
         title="Limpar ranking"
-        message="Tem certeza que deseja limpar todo o ranking local?"
+        message={`Tem certeza que deseja limpar todo o ranking ${clearScopeLabel}?`}
         confirmLabel="Limpar"
         cancelLabel="Cancelar"
         tone="danger"
         onCancel={() => setShowClearConfirm(false)}
         onConfirm={() => {
-          onClear()
           setShowClearConfirm(false)
+          setClearing(true)
+          setClearFeedback(null)
+          void Promise.resolve(onClear())
+            .then((success) => {
+              setClearFeedback(
+                success
+                  ? `Ranking ${clearScopeLabel} limpo com sucesso.`
+                  : `Nao foi possivel limpar ranking ${clearScopeLabel}.`,
+              )
+            })
+            .finally(() => {
+              setClearing(false)
+            })
         }}
       />
     </section>

@@ -4,6 +4,7 @@ export type Screen =
   | 'categories'
   | 'levels'
   | 'play'
+  | 'duel'
   | 'quiz'
   | 'levelResult'
   | 'final'
@@ -140,4 +141,48 @@ export interface QuestionImageSuggestion {
   source: string
   pageUrl?: string
   author?: string
+}
+
+export type DuelStatus = 'waiting' | 'running' | 'finished' | 'cancelled'
+
+export interface DuelSession {
+  id: string
+  quizId: string
+  categoryId: string
+  levelId: string
+  hostUserId: string
+  guestUserId: string | null
+  status: DuelStatus
+  startedAt: string | null
+  finishedAt: string | null
+  firstFinishedUserId: string | null
+  firstFinishedAt: string | null
+  winnerUserId: string | null
+  winnerScore: number | null
+  winnerDurationMs: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DuelEntry {
+  sessionId: string
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  answers: Record<string, string>
+  answeredCount: number
+  currentQuestion: number
+  isSubmitted: boolean
+  submittedAt: string | null
+  score: number
+  total: number
+  durationMs: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DuelFinalizeResult {
+  session: DuelSession
+  entries: DuelEntry[]
+  winnerUserId: string | null
 }
