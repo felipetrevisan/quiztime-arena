@@ -16,6 +16,13 @@ const getStorage = (): Storage | null => {
   if (typeof window === 'undefined') {
     return null
   }
+  return window.localStorage
+}
+
+const getLegacyStorage = (): Storage | null => {
+  if (typeof window === 'undefined') {
+    return null
+  }
   return window.sessionStorage
 }
 
@@ -32,7 +39,20 @@ export const getActivePersonaAlias = (): string | null => {
     return null
   }
 
-  const alias = storage.getItem(PERSONA_STORAGE_KEY)?.trim().toLowerCase() ?? ''
+  const current = storage.getItem(PERSONA_STORAGE_KEY)?.trim().toLowerCase() ?? ''
+  if (current && personaMap[current]) {
+    return current
+  }
+
+  const legacyStorage = getLegacyStorage()
+  const legacyAlias = legacyStorage?.getItem(PERSONA_STORAGE_KEY)?.trim().toLowerCase() ?? ''
+  if (!legacyAlias || !personaMap[legacyAlias]) {
+    return null
+  }
+
+  storage.setItem(PERSONA_STORAGE_KEY, legacyAlias)
+  legacyStorage?.removeItem(PERSONA_STORAGE_KEY)
+  const alias = legacyAlias
   if (!alias) {
     return null
   }

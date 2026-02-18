@@ -1,5 +1,7 @@
+import { useQuizApp } from '@/context/quiz-app-context'
+import { HomeScreen } from '@/pages/HomeScreen'
 import { setActivePersonaAlias } from '@/utils/persona'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Outlet, createFileRoute, useMatchRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 export const Route = createFileRoute('/bea')({
@@ -7,18 +9,34 @@ export const Route = createFileRoute('/bea')({
 })
 
 function BeaAliasRoute() {
-  const navigate = useNavigate()
+  const matchRoute = useMatchRoute()
+  const { goBuilder, goCategories, goMyQuizzes, goPlay, goRanking, hasSession, isAdmin } =
+    useQuizApp()
+  const isBeaHome = Boolean(
+    matchRoute({
+      to: '/bea',
+      fuzzy: false,
+    }),
+  )
 
   useEffect(() => {
     setActivePersonaAlias('bea')
-    void navigate({ to: '/' })
-  }, [navigate])
+  }, [])
+
+  if (!isBeaHome) {
+    return <Outlet />
+  }
 
   return (
-    <section className="mt-6 flex flex-1 items-center justify-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
-        Preparando sua experiencia...
-      </p>
-    </section>
+    <HomeScreen
+      isAdmin={isAdmin}
+      canOpenPlay={hasSession}
+      onStart={goCategories}
+      onOpenPlay={goPlay}
+      onOpenBuilder={goBuilder}
+      onOpenRanking={goRanking}
+      onOpenMyQuizzes={goMyQuizzes}
+      canOpenMyQuizzes={hasSession}
+    />
   )
 }

@@ -95,6 +95,18 @@ const normalizePathname = (pathname: string): string => {
   return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
 }
 
+const stripBeaPrefix = (pathname: string): string => {
+  if (pathname === '/bea') {
+    return '/'
+  }
+
+  if (pathname.startsWith('/bea/')) {
+    return pathname.slice('/bea'.length) || '/'
+  }
+
+  return pathname
+}
+
 const decodePathSegment = (value: string): string => {
   try {
     return decodeURIComponent(value)
@@ -106,7 +118,7 @@ const decodePathSegment = (value: string): string => {
 export const getScreenFromPath = (
   pathname: string,
 ): { screen: Screen; categoryId?: string; levelId?: string } => {
-  const normalized = normalizePathname(pathname)
+  const normalized = stripBeaPrefix(normalizePathname(pathname))
 
   if (normalized === '/') {
     return { screen: 'home' }

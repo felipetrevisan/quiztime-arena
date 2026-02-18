@@ -3,11 +3,11 @@ import { RespondResultScreen } from '@/pages/RespondResultScreen'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback } from 'react'
 
-export const Route = createFileRoute('/respond/result')({
-  component: RespondResultRoute,
+export const Route = createFileRoute('/bea/respond/result')({
+  component: BeaRespondResultRoute,
 })
 
-function RespondResultRoute() {
+function BeaRespondResultRoute() {
   const { goHome, goPlay, handleSubmitResponderResult, responderName, sharedQuiz, sharedResult } =
     useQuizApp()
 
@@ -31,12 +31,7 @@ function RespondResultRoute() {
       onSubmitResult={submitResult}
       onOpenRanking={() => {
         void handleSubmitResponderResult().finally(() => {
-          const isBeaScoped =
-            window.location.pathname === '/bea' || window.location.pathname.startsWith('/bea/')
-          const prefix = isBeaScoped ? '/bea' : ''
-          window.location.assign(
-            `${prefix}/ranking?ranking=${encodeURIComponent(sharedQuiz.quizId)}`,
-          )
+          window.location.assign(`/bea/ranking?ranking=${encodeURIComponent(sharedQuiz.quizId)}`)
         })
       }}
       onOpenPlay={goPlay}

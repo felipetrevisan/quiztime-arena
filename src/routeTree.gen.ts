@@ -18,9 +18,19 @@ import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as BeaRouteImport } from './routes/bea'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RespondResultRouteImport } from './routes/respond.result'
+import { Route as BeaRankingRouteImport } from './routes/bea.ranking'
+import { Route as BeaPlayRouteImport } from './routes/bea.play'
+import { Route as BeaMyQuizzesRouteImport } from './routes/bea.my-quizzes'
+import { Route as BeaFinalRouteImport } from './routes/bea.final'
+import { Route as BeaCategoriesRouteImport } from './routes/bea.categories'
+import { Route as BeaBuilderRouteImport } from './routes/bea.builder'
 import { Route as CategoriesCategoryIdLevelsRouteImport } from './routes/categories.$categoryId.levels'
+import { Route as BeaRespondResultRouteImport } from './routes/bea.respond.result'
+import { Route as BeaCategoriesCategoryIdLevelsRouteImport } from './routes/bea.categories.$categoryId.levels'
 import { Route as CategoriesCategoryIdLevelsLevelIdResultRouteImport } from './routes/categories.$categoryId.levels.$levelId.result'
 import { Route as CategoriesCategoryIdLevelsLevelIdQuizRouteImport } from './routes/categories.$categoryId.levels.$levelId.quiz'
+import { Route as BeaCategoriesCategoryIdLevelsLevelIdResultRouteImport } from './routes/bea.categories.$categoryId.levels.$levelId.result'
+import { Route as BeaCategoriesCategoryIdLevelsLevelIdQuizRouteImport } from './routes/bea.categories.$categoryId.levels.$levelId.quiz'
 
 const RankingRoute = RankingRouteImport.update({
   id: '/ranking',
@@ -67,11 +77,52 @@ const RespondResultRoute = RespondResultRouteImport.update({
   path: '/respond/result',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeaRankingRoute = BeaRankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaPlayRoute = BeaPlayRouteImport.update({
+  id: '/play',
+  path: '/play',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaMyQuizzesRoute = BeaMyQuizzesRouteImport.update({
+  id: '/my-quizzes',
+  path: '/my-quizzes',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaFinalRoute = BeaFinalRouteImport.update({
+  id: '/final',
+  path: '/final',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaCategoriesRoute = BeaCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaBuilderRoute = BeaBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => BeaRoute,
+} as any)
 const CategoriesCategoryIdLevelsRoute =
   CategoriesCategoryIdLevelsRouteImport.update({
     id: '/$categoryId/levels',
     path: '/$categoryId/levels',
     getParentRoute: () => CategoriesRoute,
+  } as any)
+const BeaRespondResultRoute = BeaRespondResultRouteImport.update({
+  id: '/respond/result',
+  path: '/respond/result',
+  getParentRoute: () => BeaRoute,
+} as any)
+const BeaCategoriesCategoryIdLevelsRoute =
+  BeaCategoriesCategoryIdLevelsRouteImport.update({
+    id: '/$categoryId/levels',
+    path: '/$categoryId/levels',
+    getParentRoute: () => BeaCategoriesRoute,
   } as any)
 const CategoriesCategoryIdLevelsLevelIdResultRoute =
   CategoriesCategoryIdLevelsLevelIdResultRouteImport.update({
@@ -85,49 +136,91 @@ const CategoriesCategoryIdLevelsLevelIdQuizRoute =
     path: '/$levelId/quiz',
     getParentRoute: () => CategoriesCategoryIdLevelsRoute,
   } as any)
+const BeaCategoriesCategoryIdLevelsLevelIdResultRoute =
+  BeaCategoriesCategoryIdLevelsLevelIdResultRouteImport.update({
+    id: '/$levelId/result',
+    path: '/$levelId/result',
+    getParentRoute: () => BeaCategoriesCategoryIdLevelsRoute,
+  } as any)
+const BeaCategoriesCategoryIdLevelsLevelIdQuizRoute =
+  BeaCategoriesCategoryIdLevelsLevelIdQuizRouteImport.update({
+    id: '/$levelId/quiz',
+    path: '/$levelId/quiz',
+    getParentRoute: () => BeaCategoriesCategoryIdLevelsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/bea': typeof BeaRoute
+  '/bea': typeof BeaRouteWithChildren
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/play': typeof PlayRoute
   '/ranking': typeof RankingRoute
+  '/bea/builder': typeof BeaBuilderRoute
+  '/bea/categories': typeof BeaCategoriesRouteWithChildren
+  '/bea/final': typeof BeaFinalRoute
+  '/bea/my-quizzes': typeof BeaMyQuizzesRoute
+  '/bea/play': typeof BeaPlayRoute
+  '/bea/ranking': typeof BeaRankingRoute
   '/respond/result': typeof RespondResultRoute
+  '/bea/respond/result': typeof BeaRespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
+  '/bea/categories/$categoryId/levels': typeof BeaCategoriesCategoryIdLevelsRouteWithChildren
   '/categories/$categoryId/levels/$levelId/quiz': typeof CategoriesCategoryIdLevelsLevelIdQuizRoute
   '/categories/$categoryId/levels/$levelId/result': typeof CategoriesCategoryIdLevelsLevelIdResultRoute
+  '/bea/categories/$categoryId/levels/$levelId/quiz': typeof BeaCategoriesCategoryIdLevelsLevelIdQuizRoute
+  '/bea/categories/$categoryId/levels/$levelId/result': typeof BeaCategoriesCategoryIdLevelsLevelIdResultRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/bea': typeof BeaRoute
+  '/bea': typeof BeaRouteWithChildren
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/play': typeof PlayRoute
   '/ranking': typeof RankingRoute
+  '/bea/builder': typeof BeaBuilderRoute
+  '/bea/categories': typeof BeaCategoriesRouteWithChildren
+  '/bea/final': typeof BeaFinalRoute
+  '/bea/my-quizzes': typeof BeaMyQuizzesRoute
+  '/bea/play': typeof BeaPlayRoute
+  '/bea/ranking': typeof BeaRankingRoute
   '/respond/result': typeof RespondResultRoute
+  '/bea/respond/result': typeof BeaRespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
+  '/bea/categories/$categoryId/levels': typeof BeaCategoriesCategoryIdLevelsRouteWithChildren
   '/categories/$categoryId/levels/$levelId/quiz': typeof CategoriesCategoryIdLevelsLevelIdQuizRoute
   '/categories/$categoryId/levels/$levelId/result': typeof CategoriesCategoryIdLevelsLevelIdResultRoute
+  '/bea/categories/$categoryId/levels/$levelId/quiz': typeof BeaCategoriesCategoryIdLevelsLevelIdQuizRoute
+  '/bea/categories/$categoryId/levels/$levelId/result': typeof BeaCategoriesCategoryIdLevelsLevelIdResultRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/bea': typeof BeaRoute
+  '/bea': typeof BeaRouteWithChildren
   '/builder': typeof BuilderRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/final': typeof FinalRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/play': typeof PlayRoute
   '/ranking': typeof RankingRoute
+  '/bea/builder': typeof BeaBuilderRoute
+  '/bea/categories': typeof BeaCategoriesRouteWithChildren
+  '/bea/final': typeof BeaFinalRoute
+  '/bea/my-quizzes': typeof BeaMyQuizzesRoute
+  '/bea/play': typeof BeaPlayRoute
+  '/bea/ranking': typeof BeaRankingRoute
   '/respond/result': typeof RespondResultRoute
+  '/bea/respond/result': typeof BeaRespondResultRoute
   '/categories/$categoryId/levels': typeof CategoriesCategoryIdLevelsRouteWithChildren
+  '/bea/categories/$categoryId/levels': typeof BeaCategoriesCategoryIdLevelsRouteWithChildren
   '/categories/$categoryId/levels/$levelId/quiz': typeof CategoriesCategoryIdLevelsLevelIdQuizRoute
   '/categories/$categoryId/levels/$levelId/result': typeof CategoriesCategoryIdLevelsLevelIdResultRoute
+  '/bea/categories/$categoryId/levels/$levelId/quiz': typeof BeaCategoriesCategoryIdLevelsLevelIdQuizRoute
+  '/bea/categories/$categoryId/levels/$levelId/result': typeof BeaCategoriesCategoryIdLevelsLevelIdResultRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,10 +233,20 @@ export interface FileRouteTypes {
     | '/my-quizzes'
     | '/play'
     | '/ranking'
+    | '/bea/builder'
+    | '/bea/categories'
+    | '/bea/final'
+    | '/bea/my-quizzes'
+    | '/bea/play'
+    | '/bea/ranking'
     | '/respond/result'
+    | '/bea/respond/result'
     | '/categories/$categoryId/levels'
+    | '/bea/categories/$categoryId/levels'
     | '/categories/$categoryId/levels/$levelId/quiz'
     | '/categories/$categoryId/levels/$levelId/result'
+    | '/bea/categories/$categoryId/levels/$levelId/quiz'
+    | '/bea/categories/$categoryId/levels/$levelId/result'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -154,10 +257,20 @@ export interface FileRouteTypes {
     | '/my-quizzes'
     | '/play'
     | '/ranking'
+    | '/bea/builder'
+    | '/bea/categories'
+    | '/bea/final'
+    | '/bea/my-quizzes'
+    | '/bea/play'
+    | '/bea/ranking'
     | '/respond/result'
+    | '/bea/respond/result'
     | '/categories/$categoryId/levels'
+    | '/bea/categories/$categoryId/levels'
     | '/categories/$categoryId/levels/$levelId/quiz'
     | '/categories/$categoryId/levels/$levelId/result'
+    | '/bea/categories/$categoryId/levels/$levelId/quiz'
+    | '/bea/categories/$categoryId/levels/$levelId/result'
   id:
     | '__root__'
     | '/'
@@ -168,15 +281,25 @@ export interface FileRouteTypes {
     | '/my-quizzes'
     | '/play'
     | '/ranking'
+    | '/bea/builder'
+    | '/bea/categories'
+    | '/bea/final'
+    | '/bea/my-quizzes'
+    | '/bea/play'
+    | '/bea/ranking'
     | '/respond/result'
+    | '/bea/respond/result'
     | '/categories/$categoryId/levels'
+    | '/bea/categories/$categoryId/levels'
     | '/categories/$categoryId/levels/$levelId/quiz'
     | '/categories/$categoryId/levels/$levelId/result'
+    | '/bea/categories/$categoryId/levels/$levelId/quiz'
+    | '/bea/categories/$categoryId/levels/$levelId/result'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BeaRoute: typeof BeaRoute
+  BeaRoute: typeof BeaRouteWithChildren
   BuilderRoute: typeof BuilderRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   FinalRoute: typeof FinalRoute
@@ -251,12 +374,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RespondResultRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bea/ranking': {
+      id: '/bea/ranking'
+      path: '/ranking'
+      fullPath: '/bea/ranking'
+      preLoaderRoute: typeof BeaRankingRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/play': {
+      id: '/bea/play'
+      path: '/play'
+      fullPath: '/bea/play'
+      preLoaderRoute: typeof BeaPlayRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/my-quizzes': {
+      id: '/bea/my-quizzes'
+      path: '/my-quizzes'
+      fullPath: '/bea/my-quizzes'
+      preLoaderRoute: typeof BeaMyQuizzesRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/final': {
+      id: '/bea/final'
+      path: '/final'
+      fullPath: '/bea/final'
+      preLoaderRoute: typeof BeaFinalRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/categories': {
+      id: '/bea/categories'
+      path: '/categories'
+      fullPath: '/bea/categories'
+      preLoaderRoute: typeof BeaCategoriesRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/builder': {
+      id: '/bea/builder'
+      path: '/builder'
+      fullPath: '/bea/builder'
+      preLoaderRoute: typeof BeaBuilderRouteImport
+      parentRoute: typeof BeaRoute
+    }
     '/categories/$categoryId/levels': {
       id: '/categories/$categoryId/levels'
       path: '/$categoryId/levels'
       fullPath: '/categories/$categoryId/levels'
       preLoaderRoute: typeof CategoriesCategoryIdLevelsRouteImport
       parentRoute: typeof CategoriesRoute
+    }
+    '/bea/respond/result': {
+      id: '/bea/respond/result'
+      path: '/respond/result'
+      fullPath: '/bea/respond/result'
+      preLoaderRoute: typeof BeaRespondResultRouteImport
+      parentRoute: typeof BeaRoute
+    }
+    '/bea/categories/$categoryId/levels': {
+      id: '/bea/categories/$categoryId/levels'
+      path: '/$categoryId/levels'
+      fullPath: '/bea/categories/$categoryId/levels'
+      preLoaderRoute: typeof BeaCategoriesCategoryIdLevelsRouteImport
+      parentRoute: typeof BeaCategoriesRoute
     }
     '/categories/$categoryId/levels/$levelId/result': {
       id: '/categories/$categoryId/levels/$levelId/result'
@@ -272,8 +451,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesCategoryIdLevelsLevelIdQuizRouteImport
       parentRoute: typeof CategoriesCategoryIdLevelsRoute
     }
+    '/bea/categories/$categoryId/levels/$levelId/result': {
+      id: '/bea/categories/$categoryId/levels/$levelId/result'
+      path: '/$levelId/result'
+      fullPath: '/bea/categories/$categoryId/levels/$levelId/result'
+      preLoaderRoute: typeof BeaCategoriesCategoryIdLevelsLevelIdResultRouteImport
+      parentRoute: typeof BeaCategoriesCategoryIdLevelsRoute
+    }
+    '/bea/categories/$categoryId/levels/$levelId/quiz': {
+      id: '/bea/categories/$categoryId/levels/$levelId/quiz'
+      path: '/$levelId/quiz'
+      fullPath: '/bea/categories/$categoryId/levels/$levelId/quiz'
+      preLoaderRoute: typeof BeaCategoriesCategoryIdLevelsLevelIdQuizRouteImport
+      parentRoute: typeof BeaCategoriesCategoryIdLevelsRoute
+    }
   }
 }
+
+interface BeaCategoriesCategoryIdLevelsRouteChildren {
+  BeaCategoriesCategoryIdLevelsLevelIdQuizRoute: typeof BeaCategoriesCategoryIdLevelsLevelIdQuizRoute
+  BeaCategoriesCategoryIdLevelsLevelIdResultRoute: typeof BeaCategoriesCategoryIdLevelsLevelIdResultRoute
+}
+
+const BeaCategoriesCategoryIdLevelsRouteChildren: BeaCategoriesCategoryIdLevelsRouteChildren =
+  {
+    BeaCategoriesCategoryIdLevelsLevelIdQuizRoute:
+      BeaCategoriesCategoryIdLevelsLevelIdQuizRoute,
+    BeaCategoriesCategoryIdLevelsLevelIdResultRoute:
+      BeaCategoriesCategoryIdLevelsLevelIdResultRoute,
+  }
+
+const BeaCategoriesCategoryIdLevelsRouteWithChildren =
+  BeaCategoriesCategoryIdLevelsRoute._addFileChildren(
+    BeaCategoriesCategoryIdLevelsRouteChildren,
+  )
+
+interface BeaCategoriesRouteChildren {
+  BeaCategoriesCategoryIdLevelsRoute: typeof BeaCategoriesCategoryIdLevelsRouteWithChildren
+}
+
+const BeaCategoriesRouteChildren: BeaCategoriesRouteChildren = {
+  BeaCategoriesCategoryIdLevelsRoute:
+    BeaCategoriesCategoryIdLevelsRouteWithChildren,
+}
+
+const BeaCategoriesRouteWithChildren = BeaCategoriesRoute._addFileChildren(
+  BeaCategoriesRouteChildren,
+)
+
+interface BeaRouteChildren {
+  BeaBuilderRoute: typeof BeaBuilderRoute
+  BeaCategoriesRoute: typeof BeaCategoriesRouteWithChildren
+  BeaFinalRoute: typeof BeaFinalRoute
+  BeaMyQuizzesRoute: typeof BeaMyQuizzesRoute
+  BeaPlayRoute: typeof BeaPlayRoute
+  BeaRankingRoute: typeof BeaRankingRoute
+  BeaRespondResultRoute: typeof BeaRespondResultRoute
+}
+
+const BeaRouteChildren: BeaRouteChildren = {
+  BeaBuilderRoute: BeaBuilderRoute,
+  BeaCategoriesRoute: BeaCategoriesRouteWithChildren,
+  BeaFinalRoute: BeaFinalRoute,
+  BeaMyQuizzesRoute: BeaMyQuizzesRoute,
+  BeaPlayRoute: BeaPlayRoute,
+  BeaRankingRoute: BeaRankingRoute,
+  BeaRespondResultRoute: BeaRespondResultRoute,
+}
+
+const BeaRouteWithChildren = BeaRoute._addFileChildren(BeaRouteChildren)
 
 interface CategoriesCategoryIdLevelsRouteChildren {
   CategoriesCategoryIdLevelsLevelIdQuizRoute: typeof CategoriesCategoryIdLevelsLevelIdQuizRoute
@@ -307,7 +553,7 @@ const CategoriesRouteWithChildren = CategoriesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BeaRoute: BeaRoute,
+  BeaRoute: BeaRouteWithChildren,
   BuilderRoute: BuilderRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   FinalRoute: FinalRoute,

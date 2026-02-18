@@ -2,11 +2,11 @@ import type { QuizAppContextValue } from '@/context/quiz-app-context'
 import { themes } from '@/data/themes'
 import { hasRemote } from '@/services/supabase'
 import type { AccessMode, AppConfig, Level, LevelRecord, ThemeOption } from '@/types/quiz'
-import { getActivePersonaAlias, getPersonaTheme } from '@/utils/persona'
+import { getActivePersonaAlias, getPersonaTheme, setActivePersonaAlias } from '@/utils/persona'
 import { supabase } from '@/utils/supabase'
 import { buildPublicAppUrl } from '@/utils/url'
 import type { Session } from '@supabase/supabase-js'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { adminEmails, levelKey } from './quiz/shared'
 import { useQuizActions } from './quiz/useQuizActions'
@@ -161,6 +161,12 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
 
     return records[levelKey(selectedCategory.id, selectedLevel.id)] ?? null
   }, [records, selectedCategory, selectedLevel])
+
+  useEffect(() => {
+    if (location.pathname === '/bea' || location.pathname.startsWith('/bea/')) {
+      setActivePersonaAlias('bea')
+    }
+  }, [location.pathname])
 
   const categoryTotals = useMemo(() => {
     if (!selectedCategory) {

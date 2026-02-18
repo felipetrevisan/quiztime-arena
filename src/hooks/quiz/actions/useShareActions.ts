@@ -70,6 +70,27 @@ export const useShareActions = (params: UseShareActionsParams) => {
   } = params
 
   const appBaseUrl = getPublicAppBaseUrl()
+  const getRoutePrefix = (): string => {
+    if (typeof window === 'undefined') {
+      return ''
+    }
+
+    return window.location.pathname === '/bea' || window.location.pathname.startsWith('/bea/')
+      ? '/bea'
+      : ''
+  }
+  const withRoutePrefix = (pathAndQuery: string): string => {
+    const prefix = getRoutePrefix()
+    if (!prefix) {
+      return pathAndQuery
+    }
+
+    if (pathAndQuery === '/') {
+      return prefix
+    }
+
+    return `${prefix}${pathAndQuery}`
+  }
 
   const handleGenerateShareLink = async (levelId: string) => {
     if (!selectedCategory) {
@@ -95,9 +116,11 @@ export const useShareActions = (params: UseShareActionsParams) => {
     }
 
     const encoded = encodePayload(payload)
-    const shareLink = `${appBaseUrl}/?respond=${encoded}`
+    const shareLink = `${appBaseUrl}${withRoutePrefix(`/?respond=${encoded}`)}`
     const key = levelKey(selectedCategory.id, level.id)
-    const rankingPreviewLink = `${appBaseUrl}/ranking?ranking=${encodeURIComponent(quizId)}`
+    const rankingPreviewLink = `${appBaseUrl}${withRoutePrefix(
+      `/ranking?ranking=${encodeURIComponent(quizId)}`,
+    )}`
 
     setShareLinks((previous) => ({
       ...previous,
@@ -151,7 +174,9 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return
     }
 
-    const previewLink = `${appBaseUrl}/ranking?ranking=${encodeURIComponent(quizId)}`
+    const previewLink = `${appBaseUrl}${withRoutePrefix(
+      `/ranking?ranking=${encodeURIComponent(quizId)}`,
+    )}`
     setRankingPreviewLinks((previous) => ({
       ...previous,
       [key]: previewLink,
@@ -246,7 +271,7 @@ export const useShareActions = (params: UseShareActionsParams) => {
     }
 
     const encoded = encodePayload(payload)
-    return `${appBaseUrl}/ranking?import=${encoded}`
+    return `${appBaseUrl}${withRoutePrefix(`/ranking?import=${encoded}`)}`
   }
 
   const handleSubmitResponderResult = async (): Promise<boolean> => {
