@@ -2,6 +2,7 @@ import type {
   Category,
   DuelEntry,
   DuelFinalizeResult,
+  DuelHistoryMatch,
   DuelSession,
   Level,
   Question,
@@ -739,6 +740,74 @@ export const finalizeRemoteDuelSubmission = async (payload: {
     entries: rawEntries.map(toDuelEntry),
     winnerUserId,
   }
+}
+
+export const fetchRemoteMyDuelHistory = async (
+  userId: string,
+): Promise<DuelHistoryMatch[] | null> => {
+  if (!supabase) return null
+
+  const normalizedUserId = userId.trim()
+  if (!normalizedUserId) {
+    return []
+  }
+
+  const { data: sessionsData, error: sessionsError } = await supabase
+    .from('duel_sessions')
+    .select(
+      'id,quiz_id,category_id,level_id,host_user_id,guest_user_id,status,started_at,finished_at,first_finished_user_id,first_finished_at,winner_user_id,winner_score,winner_duration_ms,created_at,updated_at',
+    )
+    .or(`host_user_id.eq.${normalizedUserId},guest_user_id.eq.${normalizedUserId}`)
+    .order('created_at', { ascending: false })
+
+  if (sessionsError) {
+    console.error('Erro ao carregar historico de duelos (sessoes)', sessionsError)
+    return null
+  }
+
+  const sessions = ((sessionsData ?? []) as DuelSessionRow[]).map(toDuelSession)
+  if (sessions.length === 0) {
+    return []
+  }
+
+  const sessionIds = sessions.map((session) => session.id)
+  const { data: entriesData, error: entriesError } = await supabase
+    .from('duel_entries')
+    .select(
+      'session_id,user_id,display_name,avatar_url,answers,answered_count,current_question,is_submitted,submitted_at,score,total,duration_ms,created_at,updated_at',
+    )
+    .in('session_id', sessionIds)
+
+  if (entriesError) {
+    console.error('Erro ao carregar historico de duelos (participantes)', entriesError)
+    return null
+  }
+
+  const entries = ((entriesData ?? []) as DuelEntryRow[]).map(toDuelEntry)
+  const bySession = new Map<string, DuelEntry[]>()
+
+  for (const entry of entries) {
+    const current = bySession.get(entry.sessionId) ?? []
+    current.push(entry)
+    bySession.set(entry.sessionId, current)
+  }
+
+  return sessions
+    .map((session) => {
+      const sessionEntries = bySession.get(session.id) ?? []
+      const me = sessionEntries.find((entry) => entry.userId === normalizedUserId)
+      if (!me) {
+        return null
+      }
+
+      const rival = sessionEntries.find((entry) => entry.userId !== normalizedUserId) ?? null
+      return {
+        session,
+        me,
+        rival,
+      } satisfies DuelHistoryMatch
+    })
+    .filter((item): item is DuelHistoryMatch => Boolean(item))
 }
 
 export const uploadRemoteAsset = async (file: File, path: string): Promise<string | null> => {

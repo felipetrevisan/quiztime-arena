@@ -186,3 +186,9 @@ export interface DuelFinalizeResult {
   entries: DuelEntry[]
   winnerUserId: string | null
 }
+
+export interface DuelHistoryMatch {
+  session: DuelSession
+  me: DuelEntry
+  rival: DuelEntry | null
+}
