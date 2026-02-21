@@ -13,7 +13,10 @@ function BuilderRoute() {
     config,
     goHome,
     handleAddCategory,
+    handleUpdateCategory,
     handleAddLevel,
+    handleGenerateLevelQuestions,
+    handleImportLevelQuestions,
     handleUpdateLevel,
     handleBackgroundUpload,
     handleGenerateQuestionChoices,
@@ -40,7 +43,10 @@ function BuilderRoute() {
       }
       onBackgroundUpload={handleBackgroundUpload}
       onAddCategory={handleAddCategory}
+      onUpdateCategory={handleUpdateCategory}
       onAddLevel={handleAddLevel}
+      onGenerateLevelQuestions={handleGenerateLevelQuestions}
+      onImportLevelQuestions={handleImportLevelQuestions}
       onUpdateLevel={handleUpdateLevel}
       onUpdateQuestion={handleUpdateQuestion}
       onGenerateQuestionChoices={handleGenerateQuestionChoices}

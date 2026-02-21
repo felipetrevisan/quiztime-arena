@@ -23,6 +23,7 @@ const normalizeStoredCategories = (categories: Category[]): Category[] => {
       mode: level.mode ?? 'quiz',
       answerMode: level.answerMode ?? 'text',
       timingMode: level.timingMode ?? 'timeless',
+      hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
       questions: (Array.isArray(level.questions) ? level.questions : []).map((question, index) => {
         const sourceOptions = Array.isArray(question.options) ? [...question.options] : []
         const sourceAcceptedAnswers = Array.isArray(question.acceptedAnswers)

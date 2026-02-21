@@ -29,6 +29,8 @@ interface UseShareActionsParams {
   currentUserId: string | null
   responderName: string
   responderAvatarDataUrl: string | null
+  fallbackResponderName: string
+  fallbackResponderAvatarUrl: string | null
   responderAvatarFile: File | null
   answers: Record<string, string>
   results: Record<string, boolean>
@@ -56,6 +58,8 @@ export const useShareActions = (params: UseShareActionsParams) => {
     currentUserId,
     responderName,
     responderAvatarDataUrl,
+    fallbackResponderName,
+    fallbackResponderAvatarUrl,
     responderAvatarFile,
     answers,
     results,
@@ -70,6 +74,16 @@ export const useShareActions = (params: UseShareActionsParams) => {
   } = params
 
   const appBaseUrl = getPublicAppBaseUrl()
+  const resolveResponderIdentity = (): { name: string; avatarUrl: string | null } => {
+    const name = responderName.trim() || fallbackResponderName.trim() || 'Jogador'
+    const avatarUrl = responderAvatarDataUrl?.trim() || fallbackResponderAvatarUrl?.trim() || null
+
+    return {
+      name,
+      avatarUrl,
+    }
+  }
+
   const getRoutePrefix = (): string => {
     if (typeof window === 'undefined') {
       return ''
@@ -233,12 +247,8 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return ''
     }
 
-    const safeName = responderName.trim()
-    if (!safeName) {
-      return ''
-    }
-
-    let avatarValue = responderAvatarDataUrl
+    const { name: safeName, avatarUrl } = resolveResponderIdentity()
+    let avatarValue = avatarUrl
 
     if (remoteEnabled && responderAvatarFile) {
       const extension = getFileExtension(responderAvatarFile.name)
@@ -279,8 +289,8 @@ export const useShareActions = (params: UseShareActionsParams) => {
       return false
     }
 
-    const safeName = responderName.trim() || 'Jogador'
-    let avatarValue = responderAvatarDataUrl
+    const { name: safeName, avatarUrl } = resolveResponderIdentity()
+    let avatarValue = avatarUrl
 
     if (remoteEnabled && responderAvatarFile) {
       const extension = getFileExtension(responderAvatarFile.name)

@@ -34,6 +34,7 @@ export const createEmptyLevel = (
   mode: LevelMode = 'quiz',
   timingMode: TimingMode = 'timeless',
   answerMode: AnswerMode = 'text',
+  hideDefaultQuestionImage = true,
 ): Level => ({
   id: `level-${crypto.randomUUID()}`,
   title,
@@ -41,6 +42,7 @@ export const createEmptyLevel = (
   mode,
   timingMode,
   answerMode,
+  hideDefaultQuestionImage,
   isPublished: false,
   questions: Array.from({ length: 8 }, (_, index) => makeQuestion(index, mode)),
 })

@@ -82,6 +82,11 @@ export interface QuizAppContextValue {
     options?: { categoryId: string; levelId: string },
   ) => Promise<void>
   handleAddCategory: (category: Category) => Promise<void>
+  handleUpdateCategory: (
+    categoryId: string,
+    categoryTitle: string,
+    categoryDescription: string,
+  ) => Promise<boolean>
   handleAddLevel: (
     categoryId: string,
     levelTitle: string,
@@ -89,12 +94,26 @@ export interface QuizAppContextValue {
     mode: LevelMode,
     timingMode: TimingMode,
     answerMode: AnswerMode,
+    hideDefaultQuestionImage: boolean,
   ) => void
+  handleGenerateLevelQuestions: (payload: {
+    categoryId: string
+    levelId: string
+    themeHint: string
+    difficulty: 'facil' | 'medio' | 'dificil' | 'insano'
+    questionCount: number
+  }) => Promise<number | null>
+  handleImportLevelQuestions: (payload: {
+    categoryId: string
+    levelId: string
+    rawJson: string
+  }) => Promise<number | null>
   handleUpdateLevel: (
     categoryId: string,
     levelId: string,
     levelTitle: string,
     levelDescription: string,
+    hideDefaultQuestionImage: boolean,
   ) => Promise<boolean>
   handleDeleteLevel: (categoryId: string, levelId: string) => Promise<boolean>
   handleToggleLevelPublished: (

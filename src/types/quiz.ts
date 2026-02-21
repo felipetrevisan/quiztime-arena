@@ -38,6 +38,7 @@ export interface Level {
   mode?: LevelMode
   timingMode?: TimingMode
   answerMode?: AnswerMode
+  hideDefaultQuestionImage?: boolean
   isPublished?: boolean
   questions: Question[]
 }
@@ -141,6 +142,14 @@ export interface QuestionImageSuggestion {
   source: string
   pageUrl?: string
   author?: string
+}
+
+export interface GeneratedLevelQuestion {
+  prompt: string
+  imageHint: string
+  correctAnswer: string
+  acceptedAnswers: string[]
+  options?: string[]
 }
 
 export type DuelStatus = 'waiting' | 'running' | 'finished' | 'cancelled'

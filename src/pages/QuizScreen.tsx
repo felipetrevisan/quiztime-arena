@@ -5,6 +5,7 @@ import { motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { normalizeAnswer } from '@/utils/normalize'
+import { shouldShowQuestionImage } from '@/utils/question-image'
 import { formatDuration } from '@/utils/scoring'
 
 interface QuizScreenProps {
@@ -332,25 +333,34 @@ export const QuizScreen = ({
             },
           }}
         >
-          {visibleQuestions.map((question, index) => (
-            <QuestionRow
-              key={question.id}
-              index={isChoiceMode ? currentQuestionIndex : index}
-              question={question}
-              isBlankMode={isBlankMode}
-              answerMode={isChoiceMode ? 'choices' : 'text'}
-              choiceOptions={choiceOptionsMap[question.id] ?? []}
-              showOptionImage={isBlankMode}
-              answer={answers[question.id] ?? ''}
-              corrected={corrected}
-              result={results[question.id]}
-              theme={theme}
-              imageOverride={uploadedImages[question.id]}
-              allowImageUpload={!isResponderMode && !isBlankMode}
-              onAnswerChange={onAnswerChange}
-              onImageUpload={onImageUpload}
-            />
-          ))}
+          {visibleQuestions.map((question, index) => {
+            const imagePath = uploadedImages[question.id] ?? question.imagePath
+            const showQuestionImage = shouldShowQuestionImage({
+              imagePath,
+              hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
+            })
+
+            return (
+              <QuestionRow
+                key={question.id}
+                index={isChoiceMode ? currentQuestionIndex : index}
+                question={question}
+                isBlankMode={isBlankMode}
+                answerMode={isChoiceMode ? 'choices' : 'text'}
+                choiceOptions={choiceOptionsMap[question.id] ?? []}
+                showQuestionImage={showQuestionImage}
+                showOptionImage={isBlankMode && showQuestionImage}
+                answer={answers[question.id] ?? ''}
+                corrected={corrected}
+                result={results[question.id]}
+                theme={theme}
+                imageOverride={imagePath}
+                allowImageUpload={!isResponderMode && !isBlankMode}
+                onAnswerChange={onAnswerChange}
+                onImageUpload={onImageUpload}
+              />
+            )
+          })}
         </motion.div>
       </div>
 

@@ -25,6 +25,11 @@ interface BuilderScreenProps {
   onThemeChange: (themeId: ThemeId) => void
   onBackgroundUpload: (event: ChangeEvent<HTMLInputElement>) => void
   onAddCategory: (category: Category) => void | Promise<void>
+  onUpdateCategory: (
+    categoryId: string,
+    categoryTitle: string,
+    categoryDescription: string,
+  ) => Promise<boolean>
   onAddLevel: (
     categoryId: string,
     levelTitle: string,
@@ -32,12 +37,26 @@ interface BuilderScreenProps {
     mode: LevelMode,
     timingMode: TimingMode,
     answerMode: AnswerMode,
+    hideDefaultQuestionImage: boolean,
   ) => void | Promise<void>
+  onGenerateLevelQuestions: (payload: {
+    categoryId: string
+    levelId: string
+    themeHint: string
+    difficulty: 'facil' | 'medio' | 'dificil' | 'insano'
+    questionCount: number
+  }) => Promise<number | null>
+  onImportLevelQuestions: (payload: {
+    categoryId: string
+    levelId: string
+    rawJson: string
+  }) => Promise<number | null>
   onUpdateLevel: (
     categoryId: string,
     levelId: string,
     levelTitle: string,
     levelDescription: string,
+    hideDefaultQuestionImage: boolean,
   ) => Promise<boolean>
   onUpdateQuestion: (payload: {
     categoryId: string
@@ -96,7 +115,10 @@ export const BuilderScreen = ({
   onThemeChange,
   onBackgroundUpload,
   onAddCategory,
+  onUpdateCategory,
   onAddLevel,
+  onGenerateLevelQuestions,
+  onImportLevelQuestions,
   onUpdateLevel,
   onUpdateQuestion,
   onGenerateQuestionChoices,
@@ -107,8 +129,8 @@ export const BuilderScreen = ({
   const [activeTab, setActiveTab] = useState<BuilderTab>('config')
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#0d1222]/85 p-4 backdrop-blur-sm lg:p-6">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
             Painel admin
@@ -126,51 +148,99 @@ export const BuilderScreen = ({
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {tabs.map((tab) => {
-          const active = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] transition ${
-                active
-                  ? 'border-white/40 bg-white/90 text-slate-900'
-                  : 'border-white/25 bg-black/30 text-white/80'
-              }`}
-            >
-              {tab.label}
-            </button>
-          )
-        })}
+      <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-white/15 bg-black/25 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            Categorias
+          </p>
+          <p className="mt-1 text-lg font-black text-white">{categories.length}</p>
+        </div>
+        <div className="rounded-xl border border-white/15 bg-black/25 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            Niveis
+          </p>
+          <p className="mt-1 text-lg font-black text-white">
+            {categories.reduce((count, category) => count + category.levels.length, 0)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/15 bg-black/25 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            Perguntas
+          </p>
+          <p className="mt-1 text-lg font-black text-white">
+            {categories.reduce(
+              (count, category) =>
+                count + category.levels.reduce((total, level) => total + level.questions.length, 0),
+              0,
+            )}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/15 bg-black/25 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            Publicados
+          </p>
+          <p className="mt-1 text-lg font-black text-white">
+            {categories.reduce(
+              (count, category) =>
+                count + category.levels.filter((level) => Boolean(level.isPublished)).length,
+              0,
+            )}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-        {activeTab === 'config' ? (
-          <ConfigPanel
-            title={title}
-            subtitle={subtitle}
-            themeId={themeId}
-            themes={themes}
-            onTitleChange={onTitleChange}
-            onSubtitleChange={onSubtitleChange}
-            onThemeChange={onThemeChange}
-            onBackgroundUpload={onBackgroundUpload}
-          />
-        ) : (
-          <BuilderPanel
-            categories={categories}
-            section={activeTab}
-            onAddCategory={onAddCategory}
-            onAddLevel={onAddLevel}
-            onUpdateLevel={onUpdateLevel}
-            onUpdateQuestion={onUpdateQuestion}
-            onGenerateQuestionChoices={onGenerateQuestionChoices}
-            onSuggestQuestionImages={onSuggestQuestionImages}
-            onUploadQuestionImage={onUploadQuestionImage}
-          />
-        )}
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="rounded-2xl border border-white/15 bg-black/25 p-2">
+          <div className="space-y-2">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full rounded-xl border px-3 py-2 text-left text-xs font-bold uppercase tracking-[0.12em] transition ${
+                    active
+                      ? 'border-white/40 bg-white/90 text-slate-900'
+                      : 'border-white/20 bg-black/25 text-white/80 hover:bg-black/35'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+
+        <div className="min-h-0 overflow-y-auto pr-1">
+          {activeTab === 'config' ? (
+            <ConfigPanel
+              title={title}
+              subtitle={subtitle}
+              themeId={themeId}
+              themes={themes}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onThemeChange={onThemeChange}
+              onBackgroundUpload={onBackgroundUpload}
+            />
+          ) : (
+            <BuilderPanel
+              categories={categories}
+              section={activeTab}
+              onAddCategory={onAddCategory}
+              onUpdateCategory={onUpdateCategory}
+              onAddLevel={onAddLevel}
+              onGenerateLevelQuestions={onGenerateLevelQuestions}
+              onImportLevelQuestions={onImportLevelQuestions}
+              onUpdateLevel={onUpdateLevel}
+              onUpdateQuestion={onUpdateQuestion}
+              onGenerateQuestionChoices={onGenerateQuestionChoices}
+              onSuggestQuestionImages={onSuggestQuestionImages}
+              onUploadQuestionImage={onUploadQuestionImage}
+            />
+          )}
+        </div>
       </div>
     </section>
   )

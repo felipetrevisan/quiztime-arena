@@ -1,4 +1,5 @@
 import type { Level, ThemeOption } from '@/types/quiz'
+import { shouldShowQuestionImage } from '@/utils/question-image'
 
 interface LevelSummarySheetProps {
   theme: ThemeOption
@@ -50,17 +51,24 @@ export const LevelSummarySheet = ({
         {level.questions.map((question, index) => {
           const isCorrect = results[question.id]
           const answerLabel = answers[question.id] || '-'
+          const imagePath = imageOverrides[question.id] ?? question.imagePath
+          const showImage = shouldShowQuestionImage({
+            imagePath,
+            hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
+          })
 
           return (
             <div
               key={question.id}
               className="flex items-center gap-2 rounded-xl border border-white/25 bg-black/25 p-2 text-xs"
             >
-              <img
-                src={imageOverrides[question.id] ?? question.imagePath}
-                alt={`Imagem da pergunta ${index + 1}`}
-                className="h-12 w-12 rounded-lg border border-white/30 object-cover"
-              />
+              {showImage && (
+                <img
+                  src={imagePath}
+                  alt={`Imagem da pergunta ${index + 1}`}
+                  className="h-12 w-12 rounded-lg border border-white/30 object-cover"
+                />
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{question.question || question.prompt}</p>
                 <p className="truncate text-white/80">Marcada: {answerLabel}</p>

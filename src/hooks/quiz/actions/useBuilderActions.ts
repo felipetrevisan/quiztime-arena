@@ -2,8 +2,11 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 
 import {
   deleteRemoteLevel,
+  generateRemoteLevelQuestions,
   generateRemoteQuestionChoices,
   suggestRemoteQuestionImages,
+  updateRemoteCategoryTitleInRankings,
+  updateRemoteLevelTitleInRankings,
   updateRemoteQuestionImage,
   uploadRemoteAsset,
   upsertRemoteCategory,
@@ -12,9 +15,11 @@ import {
 import type {
   AnswerMode,
   Category,
+  GeneratedLevelQuestion,
   Level,
   LevelMode,
   QuestionImageSuggestion,
+  RankingEntry,
   TimingMode,
 } from '@/types/quiz'
 import { createEmptyLevel } from '@/utils/builder'
@@ -31,7 +36,42 @@ interface UseBuilderActionsParams {
   setFrameImage: Dispatch<SetStateAction<string | null>>
   setUploadedImages: Dispatch<SetStateAction<Record<string, string>>>
   setCategories: Dispatch<SetStateAction<Category[]>>
+  setRankings: Dispatch<SetStateAction<RankingEntry[]>>
 }
+
+const parseJsonBlock = (raw: string): unknown | null => {
+  const cleaned = raw
+    .trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+
+  if (!cleaned) {
+    return null
+  }
+
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    return null
+  }
+}
+
+const toStringValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : typeof value === 'string'
+      ? value
+          .split(/[\n,;]+/g)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : []
 
 export const useBuilderActions = (params: UseBuilderActionsParams) => {
   const {
@@ -42,7 +82,50 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     setFrameImage,
     setUploadedImages,
     setCategories,
+    setRankings,
   } = params
+
+  const normalizeLabel = (value: string): string => value.trim().toLowerCase()
+
+  const buildChoicesFromGeneratedQuestion = (generated: GeneratedLevelQuestion): string[] => {
+    const correct = generated.correctAnswer.trim()
+    const normalizedCorrect = normalizeAnswer(correct)
+    const options = (generated.options ?? [])
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .filter(
+        (item, index, values) =>
+          values.findIndex((candidate) => normalizeAnswer(candidate) === normalizeAnswer(item)) ===
+          index,
+      )
+
+    const wrong = options.filter((item) => normalizeAnswer(item) !== normalizedCorrect).slice(0, 3)
+
+    const fallbackWrong = [
+      `Nao e ${correct}`,
+      'Alternativa incorreta A',
+      'Alternativa incorreta B',
+      'Alternativa incorreta C',
+    ]
+
+    for (const item of fallbackWrong) {
+      if (wrong.length >= 3) {
+        break
+      }
+
+      const normalized = normalizeAnswer(item)
+      if (
+        normalized &&
+        normalized !== normalizedCorrect &&
+        !wrong.some((candidate) => normalizeAnswer(candidate) === normalized)
+      ) {
+        wrong.push(item)
+      }
+    }
+
+    const mixed = [...wrong.slice(0, 3), correct]
+    return mixed.sort(() => Math.random() - 0.5)
+  }
 
   const shuffle = <T>(items: T[]): T[] => {
     const next = [...items]
@@ -97,6 +180,216 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
 
     return shuffle([correctAnswer, ...wrong.slice(0, 3)])
+  }
+
+  const handleImportLevelQuestions = async (payload: {
+    categoryId: string
+    levelId: string
+    rawJson: string
+  }): Promise<number | null> => {
+    const { categoryId, levelId, rawJson } = payload
+    const category = categories.find((item) => item.id === categoryId)
+    const level = category?.levels.find((item) => item.id === levelId)
+    const levelPosition = category?.levels.findIndex((item) => item.id === levelId) ?? -1
+
+    if (!category || !level) {
+      return null
+    }
+
+    const parsed = parseJsonBlock(rawJson)
+    if (!parsed) {
+      return null
+    }
+
+    const root = parsed as Record<string, unknown>
+    const items = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(root.questions)
+        ? root.questions
+        : []
+
+    if (items.length === 0) {
+      return null
+    }
+
+    const isChoiceLevel = level.answerMode === 'choices' && level.mode !== 'blank'
+    const nextQuestions = items
+      .map((item, index): Level['questions'][number] | null => {
+        if (!item || typeof item !== 'object') {
+          return null
+        }
+
+        const record = item as Record<string, unknown>
+        const current = level.questions[index]
+
+        const prompt =
+          toStringValue(record.prompt) ||
+          toStringValue(record.question) ||
+          toStringValue(record.title) ||
+          current?.prompt ||
+          current?.question ||
+          `Pergunta ${index + 1}`
+
+        const imagePath =
+          toStringValue(record.imagePath) ||
+          toStringValue(record.image) ||
+          toStringValue(record.imageUrl) ||
+          current?.imagePath ||
+          '/assets/cartoons/template.svg'
+        const imageHint = toStringValue(record.imageHint) || current?.imageHint || ''
+
+        const rawOptions = [
+          ...toStringArray(record.options ?? record.choices ?? record.alternatives),
+          toStringValue(record.option1),
+          toStringValue(record.option2),
+          toStringValue(record.option3),
+          toStringValue(record.option4),
+          toStringValue(record.a),
+          toStringValue(record.b),
+          toStringValue(record.c),
+          toStringValue(record.d),
+        ].filter(Boolean)
+        const indexedCorrect =
+          typeof record.correctIndex === 'number' && Number.isFinite(record.correctIndex)
+            ? record.correctIndex
+            : null
+
+        const explicitCorrect =
+          toStringValue(record.correctAnswerDisplay) ||
+          toStringValue(record.correctAnswer) ||
+          toStringValue(record.correct) ||
+          toStringValue(record.answer)
+
+        const acceptedFromJson = toStringArray(record.acceptedAnswers)
+
+        if (isChoiceLevel) {
+          const uniqueOptions = rawOptions.filter(
+            (option, optionIndex, options) =>
+              options.findIndex(
+                (candidate) => normalizeAnswer(candidate) === normalizeAnswer(option),
+              ) === optionIndex,
+          )
+
+          let correctAnswer =
+            explicitCorrect ||
+            (indexedCorrect !== null && indexedCorrect >= 0 && indexedCorrect < uniqueOptions.length
+              ? uniqueOptions[indexedCorrect]
+              : '') ||
+            uniqueOptions[0] ||
+            `Resposta ${index + 1}`
+
+          const normalizedCorrect = normalizeAnswer(correctAnswer)
+          const deduped = uniqueOptions.filter(Boolean)
+
+          const ensured = deduped.some((option) => normalizeAnswer(option) === normalizedCorrect)
+            ? deduped
+            : [correctAnswer, ...deduped]
+
+          const wrong = ensured
+            .filter((option) => normalizeAnswer(option) !== normalizedCorrect)
+            .slice(0, 3)
+
+          const fallbackWrong = [
+            'Alternativa incorreta A',
+            'Alternativa incorreta B',
+            'Alternativa incorreta C',
+            'Alternativa incorreta D',
+          ]
+          for (const fallback of fallbackWrong) {
+            if (wrong.length >= 3) {
+              break
+            }
+            const normalizedFallback = normalizeAnswer(fallback)
+            if (
+              normalizedFallback !== normalizedCorrect &&
+              !wrong.some((option) => normalizeAnswer(option) === normalizedFallback)
+            ) {
+              wrong.push(fallback)
+            }
+          }
+
+          const options = [correctAnswer, ...wrong.slice(0, 3)]
+          const correctIndex = Math.max(
+            0,
+            options.findIndex((option) => normalizeAnswer(option) === normalizedCorrect),
+          )
+          correctAnswer = options[correctIndex] ?? correctAnswer
+
+          const acceptedAnswers = [correctAnswer, ...acceptedFromJson].filter(
+            (answer, answerIndex, answers) =>
+              answers.findIndex(
+                (candidate) => normalizeAnswer(candidate) === normalizeAnswer(answer),
+              ) === answerIndex,
+          )
+
+          return {
+            id: current?.id ?? `custom-q-${crypto.randomUUID()}`,
+            question: prompt,
+            prompt,
+            imagePath,
+            imageHint,
+            options,
+            correctIndex,
+            acceptedAnswers,
+            correctAnswerDisplay: correctAnswer,
+          }
+        }
+
+        const correctAnswer =
+          explicitCorrect ||
+          acceptedFromJson[0] ||
+          current?.correctAnswerDisplay ||
+          `Resposta ${index + 1}`
+        const acceptedAnswers = [correctAnswer, ...acceptedFromJson]
+          .filter(Boolean)
+          .filter(
+            (answer, answerIndex, answers) =>
+              answers.findIndex(
+                (candidate) => normalizeAnswer(candidate) === normalizeAnswer(answer),
+              ) === answerIndex,
+          )
+
+        return {
+          id: current?.id ?? `custom-q-${crypto.randomUUID()}`,
+          question: prompt,
+          prompt,
+          imagePath,
+          imageHint,
+          options: current?.options ?? ['Opcao 1', 'Opcao 2', 'Opcao 3', 'Opcao 4'],
+          correctIndex: current?.correctIndex ?? 0,
+          acceptedAnswers,
+          correctAnswerDisplay: correctAnswer,
+        }
+      })
+      .filter((question): question is Level['questions'][number] => Boolean(question))
+
+    if (nextQuestions.length === 0) {
+      return null
+    }
+
+    const nextLevel: Level = {
+      ...level,
+      questions: nextQuestions,
+    }
+
+    setCategories((previous) =>
+      previous.map((item) =>
+        item.id === categoryId
+          ? {
+              ...item,
+              levels: item.levels.map((candidate) =>
+                candidate.id === levelId ? nextLevel : candidate,
+              ),
+            }
+          : item,
+      ),
+    )
+
+    if (remoteEnabled) {
+      await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    }
+
+    return nextQuestions.length
   }
 
   const handleBackgroundUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -231,6 +524,61 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
   }
 
+  const handleUpdateCategory = async (
+    categoryId: string,
+    categoryTitle: string,
+    categoryDescription: string,
+  ): Promise<boolean> => {
+    const currentCategory = categories.find((category) => category.id === categoryId)
+    const categoryPosition = categories.findIndex((category) => category.id === categoryId)
+    const nextTitle = categoryTitle.trim()
+
+    if (!currentCategory || !nextTitle) {
+      return false
+    }
+
+    const nextCategory: Category = {
+      ...currentCategory,
+      title: nextTitle,
+      description: categoryDescription.trim() || currentCategory.description,
+    }
+
+    setCategories((previous) =>
+      previous.map((category) => (category.id === categoryId ? nextCategory : category)),
+    )
+
+    const previousTitleNormalized = normalizeLabel(currentCategory.title)
+    setRankings((previous) =>
+      previous.map((entry) => {
+        const matchesById = entry.categoryId === categoryId
+        const matchesLegacy =
+          !entry.categoryId && normalizeLabel(entry.categoryTitle) === previousTitleNormalized
+
+        if (!matchesById && !matchesLegacy) {
+          return entry
+        }
+
+        return {
+          ...entry,
+          categoryTitle: nextTitle,
+        }
+      }),
+    )
+
+    if (!remoteEnabled) {
+      return true
+    }
+
+    await upsertRemoteCategory(nextCategory, Math.max(categoryPosition, 0))
+    const syncedRankings = await updateRemoteCategoryTitleInRankings({
+      categoryId,
+      previousTitle: currentCategory.title,
+      nextTitle,
+    })
+
+    return syncedRankings
+  }
+
   const handleAddLevel = (
     categoryId: string,
     levelTitle: string,
@@ -238,8 +586,16 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     mode: LevelMode,
     timingMode: TimingMode,
     answerMode: AnswerMode,
+    hideDefaultQuestionImage: boolean,
   ) => {
-    const newLevel = createEmptyLevel(levelTitle, levelDescription, mode, timingMode, answerMode)
+    const newLevel = createEmptyLevel(
+      levelTitle,
+      levelDescription,
+      mode,
+      timingMode,
+      answerMode,
+      hideDefaultQuestionImage,
+    )
     const currentCategory = categories.find((category) => category.id === categoryId)
     const levelPosition = currentCategory?.levels.length ?? 0
 
@@ -261,24 +617,86 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     }
   }
 
-  const handleUpdateLevel = async (
-    categoryId: string,
-    levelId: string,
-    levelTitle: string,
-    levelDescription: string,
-  ): Promise<boolean> => {
+  const handleGenerateLevelQuestions = async (payload: {
+    categoryId: string
+    levelId: string
+    themeHint: string
+    difficulty: 'facil' | 'medio' | 'dificil' | 'insano'
+    questionCount: number
+  }): Promise<number | null> => {
+    const { categoryId, levelId, themeHint, difficulty, questionCount } = payload
     const currentCategory = categories.find((category) => category.id === categoryId)
     const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
     const levelPosition = currentCategory?.levels.findIndex((level) => level.id === levelId) ?? -1
 
-    if (!currentCategory || !currentLevel || !levelTitle.trim()) {
-      return false
+    if (!currentCategory || !currentLevel || questionCount < 1) {
+      return null
     }
 
+    if (!remoteEnabled) {
+      return null
+    }
+
+    const generated = await generateRemoteLevelQuestions({
+      categoryTitle: currentCategory.title,
+      levelTitle: currentLevel.title,
+      levelDescription: currentLevel.description,
+      levelMode: currentLevel.mode ?? 'quiz',
+      answerMode:
+        currentLevel.mode === 'blank'
+          ? 'text'
+          : ((currentLevel.answerMode ?? 'text') as AnswerMode),
+      questionCount: Math.min(Math.max(questionCount, 1), currentLevel.questions.length),
+      themeHint: themeHint.trim(),
+      difficulty,
+    })
+
+    if (!generated || generated.length === 0) {
+      return null
+    }
+
+    const limited = generated.slice(0, currentLevel.questions.length)
     const nextLevel: Level = {
       ...currentLevel,
-      title: levelTitle.trim(),
-      description: levelDescription.trim() || currentLevel.description,
+      questions: currentLevel.questions.map((question, index) => {
+        const suggestion = limited[index]
+        if (!suggestion) {
+          return question
+        }
+
+        const correct = suggestion.correctAnswer.trim()
+        const normalizedAccepted = suggestion.acceptedAnswers
+          .map((answer) => answer.trim())
+          .filter(Boolean)
+        const hasCorrectAnswer = normalizedAccepted.some(
+          (answer) => normalizeAnswer(answer) === normalizeAnswer(correct),
+        )
+        const acceptedAnswers = hasCorrectAnswer
+          ? normalizedAccepted
+          : [correct, ...normalizedAccepted]
+        const options =
+          currentLevel.answerMode === 'choices' && currentLevel.mode !== 'blank'
+            ? buildChoicesFromGeneratedQuestion(suggestion)
+            : question.options
+        const correctIndex =
+          currentLevel.answerMode === 'choices' && currentLevel.mode !== 'blank'
+            ? Math.max(
+                0,
+                options.findIndex((item) => normalizeAnswer(item) === normalizeAnswer(correct)),
+              )
+            : question.correctIndex
+
+        return {
+          ...question,
+          question: suggestion.prompt,
+          prompt: suggestion.prompt,
+          imageHint: suggestion.imageHint || question.imageHint || '',
+          correctAnswerDisplay: correct,
+          acceptedAnswers,
+          options,
+          correctIndex,
+        }
+      }),
     }
 
     setCategories((previous) =>
@@ -294,12 +712,81 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
       }),
     )
 
+    await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
+    return limited.length
+  }
+
+  const handleUpdateLevel = async (
+    categoryId: string,
+    levelId: string,
+    levelTitle: string,
+    levelDescription: string,
+    hideDefaultQuestionImage: boolean,
+  ): Promise<boolean> => {
+    const currentCategory = categories.find((category) => category.id === categoryId)
+    const currentLevel = currentCategory?.levels.find((level) => level.id === levelId)
+    const levelPosition = currentCategory?.levels.findIndex((level) => level.id === levelId) ?? -1
+
+    if (!currentCategory || !currentLevel || !levelTitle.trim()) {
+      return false
+    }
+
+    const nextLevel: Level = {
+      ...currentLevel,
+      title: levelTitle.trim(),
+      description: levelDescription.trim() || currentLevel.description,
+      hideDefaultQuestionImage,
+    }
+
+    setCategories((previous) =>
+      previous.map((category) => {
+        if (category.id !== categoryId) {
+          return category
+        }
+
+        return {
+          ...category,
+          levels: category.levels.map((level) => (level.id === levelId ? nextLevel : level)),
+        }
+      }),
+    )
+
+    const previousLevelTitleNormalized = normalizeLabel(currentLevel.title)
+    const previousCategoryTitleNormalized = normalizeLabel(currentCategory.title)
+    setRankings((previous) =>
+      previous.map((entry) => {
+        const matchesByLevelId = entry.levelId === levelId
+        const matchesLegacy =
+          !entry.levelId &&
+          normalizeLabel(entry.levelTitle) === previousLevelTitleNormalized &&
+          (entry.categoryId === categoryId ||
+            (!entry.categoryId &&
+              normalizeLabel(entry.categoryTitle) === previousCategoryTitleNormalized))
+
+        if (!matchesByLevelId && !matchesLegacy) {
+          return entry
+        }
+
+        return {
+          ...entry,
+          levelTitle: nextLevel.title,
+        }
+      }),
+    )
+
     if (!remoteEnabled) {
       return true
     }
 
     await upsertRemoteLevel(categoryId, nextLevel, Math.max(levelPosition, 0))
-    return true
+    const syncedRankings = await updateRemoteLevelTitleInRankings({
+      categoryId,
+      levelId,
+      previousCategoryTitle: currentCategory.title,
+      previousTitle: currentLevel.title,
+      nextTitle: nextLevel.title,
+    })
+    return syncedRankings
   }
 
   const handleDeleteLevel = async (categoryId: string, levelId: string): Promise<boolean> => {
@@ -606,7 +1093,10 @@ export const useBuilderActions = (params: UseBuilderActionsParams) => {
     handleBackgroundUpload,
     handleQuestionImageUpload,
     handleAddCategory,
+    handleUpdateCategory,
     handleAddLevel,
+    handleGenerateLevelQuestions,
+    handleImportLevelQuestions,
     handleUpdateLevel,
     handleDeleteLevel,
     handleToggleLevelPublished,

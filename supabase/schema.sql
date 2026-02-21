@@ -20,6 +20,7 @@ create table if not exists public.levels (
   mode text not null default 'quiz' check (mode in ('quiz', 'blank')),
   timing_mode text not null default 'timeless' check (timing_mode in ('timeless', 'speedrun')),
   answer_format text not null default 'text' check (answer_format in ('text', 'choices')),
+  hide_default_question_image boolean not null default true,
   is_published boolean not null default false,
   position integer not null default 0,
   created_at timestamptz not null default now(),
@@ -67,6 +68,9 @@ alter table public.levels
 
 alter table public.levels
   add column if not exists answer_format text not null default 'text';
+
+alter table public.levels
+  add column if not exists hide_default_question_image boolean not null default true;
 
 alter table public.levels
   add column if not exists is_published boolean not null default false;

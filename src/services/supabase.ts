@@ -1,10 +1,13 @@
 import type {
+  AnswerMode,
   Category,
   DuelEntry,
   DuelFinalizeResult,
   DuelHistoryMatch,
   DuelSession,
+  GeneratedLevelQuestion,
   Level,
+  LevelMode,
   Question,
   QuestionImageSuggestion,
   RankingEntry,
@@ -28,6 +31,7 @@ interface LevelRow {
   mode: 'quiz' | 'blank' | null
   timing_mode: 'timeless' | 'speedrun' | null
   answer_format: 'text' | 'choices' | null
+  hide_default_question_image: boolean | null
   is_published: boolean | null
   position: number
   questions: QuestionRow[] | null
@@ -54,6 +58,17 @@ interface GenerateQuestionChoicesPayload {
   imageHint?: string
   correctAnswer: string
   acceptedAnswers: string[]
+}
+
+interface GenerateLevelQuestionsPayload {
+  categoryTitle: string
+  levelTitle: string
+  levelDescription?: string
+  levelMode: LevelMode
+  answerMode: AnswerMode
+  questionCount: number
+  themeHint?: string
+  difficulty?: 'facil' | 'medio' | 'dificil' | 'insano'
 }
 
 interface SuggestQuestionImagesPayload {
@@ -157,6 +172,7 @@ const toLevel = (row: LevelRow): Level => ({
   mode: row.mode ?? 'quiz',
   timingMode: row.timing_mode ?? 'timeless',
   answerMode: row.answer_format ?? 'text',
+  hideDefaultQuestionImage: row.hide_default_question_image ?? true,
   isPublished: row.is_published ?? false,
   questions: (row.questions ?? [])
     .slice()
@@ -241,7 +257,7 @@ export const fetchRemoteCategories = async (): Promise<Category[] | null> => {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,is_published,position,questions(id,prompt,image_path,image_hint,accepted_answers,correct_answer_display,choice_options,correct_index,position))',
+      'id,title,subtitle,description,cover_image,position,levels(id,title,description,mode,timing_mode,answer_format,hide_default_question_image,is_published,position,questions(id,prompt,image_path,image_hint,accepted_answers,correct_answer_display,choice_options,correct_index,position))',
     )
     .order('position', { ascending: true })
 
@@ -296,6 +312,7 @@ const upsertLevel = async (categoryId: string, level: Level, position: number): 
       mode: level.mode ?? 'quiz',
       timing_mode: level.timingMode ?? 'timeless',
       answer_format: level.answerMode ?? 'text',
+      hide_default_question_image: level.hideDefaultQuestionImage ?? true,
       is_published: level.isPublished ?? false,
       position,
     },
@@ -433,6 +450,102 @@ export const generateRemoteQuestionChoices = async (
     return options
   } catch (error) {
     console.error('Erro inesperado ao gerar opcoes com IA', error)
+    return null
+  }
+}
+
+export const generateRemoteLevelQuestions = async (
+  payload: GenerateLevelQuestionsPayload,
+): Promise<GeneratedLevelQuestion[] | null> => {
+  if (!supabase) return null
+
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session?.access_token) {
+      console.error('Erro ao gerar perguntas com IA: sessao nao encontrada')
+      return null
+    }
+
+    const { data, error, response } = await supabase.functions.invoke<{
+      questions?: unknown
+      error?: string
+      details?: string
+    }>('generate-level-questions', {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+
+    if (error) {
+      let functionDetails = ''
+      if (response) {
+        try {
+          const contentType = response.headers.get('Content-Type') ?? ''
+          if (contentType.includes('application/json')) {
+            const json = (await response.clone().json()) as Record<string, unknown>
+            functionDetails = JSON.stringify(json)
+          } else {
+            functionDetails = await response.clone().text()
+          }
+        } catch {
+          functionDetails = ''
+        }
+      }
+
+      console.error('Erro ao gerar perguntas com IA', {
+        error,
+        functionDetails,
+      })
+      return null
+    }
+
+    const questions = Array.isArray(data?.questions)
+      ? data.questions
+          .map((item): GeneratedLevelQuestion | null => {
+            if (!item || typeof item !== 'object') {
+              return null
+            }
+            const asRecord = item as Record<string, unknown>
+            const prompt = typeof asRecord.prompt === 'string' ? asRecord.prompt.trim() : ''
+            const imageHint =
+              typeof asRecord.imageHint === 'string' ? asRecord.imageHint.trim() : ''
+            const correctAnswer =
+              typeof asRecord.correctAnswer === 'string' ? asRecord.correctAnswer.trim() : ''
+            const acceptedAnswers = Array.isArray(asRecord.acceptedAnswers)
+              ? asRecord.acceptedAnswers
+                  .filter((value): value is string => typeof value === 'string')
+                  .map((value) => value.trim())
+                  .filter(Boolean)
+              : []
+            const options = Array.isArray(asRecord.options)
+              ? asRecord.options
+                  .filter((value): value is string => typeof value === 'string')
+                  .map((value) => value.trim())
+                  .filter(Boolean)
+              : undefined
+
+            if (!prompt || !correctAnswer) {
+              return null
+            }
+
+            return {
+              prompt,
+              imageHint,
+              correctAnswer,
+              acceptedAnswers,
+              options,
+            }
+          })
+          .filter((item): item is GeneratedLevelQuestion => Boolean(item))
+      : []
+
+    return questions.length > 0 ? questions : null
+  } catch (error) {
+    console.error('Erro inesperado ao gerar perguntas com IA', error)
     return null
   }
 }
@@ -590,6 +703,112 @@ export const clearRemoteRankings = async (): Promise<boolean> => {
   if (error) {
     console.error('Erro ao limpar ranking no Supabase', error)
     return false
+  }
+
+  return true
+}
+
+export const updateRemoteCategoryTitleInRankings = async (payload: {
+  categoryId: string
+  previousTitle: string
+  nextTitle: string
+}): Promise<boolean> => {
+  if (!supabase) return false
+
+  const nextTitle = payload.nextTitle.trim()
+  if (!nextTitle) {
+    return false
+  }
+
+  const categoryId = payload.categoryId.trim()
+  const previousTitle = payload.previousTitle.trim()
+
+  if (categoryId) {
+    const { error } = await supabase
+      .from('rankings')
+      .update({ category_title: nextTitle })
+      .eq('category_id', categoryId)
+
+    if (error) {
+      console.error('Erro ao atualizar titulo da categoria no ranking (por id)', error)
+      return false
+    }
+  }
+
+  if (previousTitle) {
+    const { error } = await supabase
+      .from('rankings')
+      .update({ category_title: nextTitle })
+      .is('category_id', null)
+      .eq('category_title', previousTitle)
+
+    if (error) {
+      console.error('Erro ao atualizar titulo da categoria no ranking (legado sem id)', error)
+      return false
+    }
+  }
+
+  return true
+}
+
+export const updateRemoteLevelTitleInRankings = async (payload: {
+  categoryId: string
+  levelId: string
+  previousCategoryTitle: string
+  previousTitle: string
+  nextTitle: string
+}): Promise<boolean> => {
+  if (!supabase) return false
+
+  const nextTitle = payload.nextTitle.trim()
+  if (!nextTitle) {
+    return false
+  }
+
+  const levelId = payload.levelId.trim()
+  const categoryId = payload.categoryId.trim()
+  const previousCategoryTitle = payload.previousCategoryTitle.trim()
+  const previousTitle = payload.previousTitle.trim()
+
+  if (levelId) {
+    const { error } = await supabase
+      .from('rankings')
+      .update({ level_title: nextTitle })
+      .eq('level_id', levelId)
+
+    if (error) {
+      console.error('Erro ao atualizar titulo do nivel no ranking (por id)', error)
+      return false
+    }
+  }
+
+  if (previousTitle && categoryId) {
+    const { error } = await supabase
+      .from('rankings')
+      .update({ level_title: nextTitle })
+      .is('level_id', null)
+      .eq('category_id', categoryId)
+      .eq('level_title', previousTitle)
+
+    if (error) {
+      console.error('Erro ao atualizar titulo do nivel no ranking (legado)', error)
+      return false
+    }
+  }
+
+  if (previousTitle && previousCategoryTitle) {
+    const { error } = await supabase
+      .from('rankings')
+      .update({ level_title: nextTitle })
+      .is('level_id', null)
+      .is('category_id', null)
+      .eq('category_title', previousCategoryTitle)
+      .eq('level_title', previousTitle)
+
+    if (error) {
+      console.error('Erro ao atualizar titulo do nivel no ranking (legado sem ids)', error)
+      return false
+    }
   }
 
   return true

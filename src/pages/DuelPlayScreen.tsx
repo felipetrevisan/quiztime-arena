@@ -9,6 +9,7 @@ import {
   upsertRemoteDuelDraft,
 } from '@/services/supabase'
 import type { DuelEntry, DuelSession, Level } from '@/types/quiz'
+import { shouldShowQuestionImage } from '@/utils/question-image'
 import { formatDuration } from '@/utils/scoring'
 import { copyText } from '@/utils/share'
 import { supabase } from '@/utils/supabase'
@@ -486,11 +487,16 @@ export const DuelPlayScreen = ({ sessionId, isBeaScoped, onBack }: DuelPlayScree
 
           <div className="h-[calc(100%-94px)] overflow-y-auto">
             <div className="rounded-xl border border-white/20 bg-black/35 p-3">
-              <img
-                src={currentQuestion.imagePath}
-                alt="Imagem da pergunta"
-                className="h-36 w-full rounded-xl border border-white/20 object-cover"
-              />
+              {shouldShowQuestionImage({
+                imagePath: currentQuestion.imagePath,
+                hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
+              }) && (
+                <img
+                  src={currentQuestion.imagePath}
+                  alt="Imagem da pergunta"
+                  className="h-36 w-full rounded-xl border border-white/20 object-cover"
+                />
+              )}
               <p className="mt-2 text-sm font-semibold text-white">
                 {currentQuestion.question || currentQuestion.prompt}
               </p>

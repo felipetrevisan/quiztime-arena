@@ -78,6 +78,7 @@ function App() {
 
   const shouldRedirectNonAdmin =
     requiresAuth && hasSession && accessMode === 'admin' && !isAdmin && isRestrictedForNonAdmin
+  const isBuilderDashboard = contextValue.screen === 'builder'
 
   useEffect(() => {
     if (!shouldRedirectNonAdmin) {
@@ -178,29 +179,29 @@ function App() {
           setToasts((previous) => previous.filter((item) => item.id !== id))
         }}
       />
-      <div className="flex min-h-screen items-center justify-center bg-[#080915] px-3 py-4 sm:px-6">
-        <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4">
+      <div
+        className={`min-h-screen bg-[#080915] ${
+          isBuilderDashboard
+            ? 'px-3 py-3 sm:px-5 sm:py-5'
+            : 'flex items-center justify-center px-3 py-4 sm:px-6'
+        }`}
+      >
+        <div
+          className={`mx-auto flex w-full flex-col gap-4 ${
+            isBuilderDashboard ? 'max-w-[1320px]' : 'max-w-[460px]'
+          }`}
+        >
           {showSignOutButton && (
             <button
               type="button"
               onClick={() => void handleSignOut()}
-              className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+              className="w-fit rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
             >
               Sair ({session?.user.email})
             </button>
           )}
 
-          <Frame
-            frameRef={contextValue.frameRef}
-            theme={activeTheme}
-            backgroundImage={isResponderMode ? null : frameImage}
-          >
-            <Header
-              title={headerTitle}
-              subtitle={headerSubtitle}
-              headerColor={activeTheme.headerColor}
-              compact={contextValue.screen === 'quiz' && isResponderMode}
-            />
+          {isBuilderDashboard ? (
             <AnimatePresence mode="wait">
               <motion.div
                 key={routeKey}
@@ -209,12 +210,38 @@ function App() {
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="flex min-h-0 flex-1 overflow-hidden"
+                className="min-h-[calc(100vh-7.5rem)] overflow-hidden"
               >
                 {protectedContent}
               </motion.div>
             </AnimatePresence>
-          </Frame>
+          ) : (
+            <Frame
+              frameRef={contextValue.frameRef}
+              theme={activeTheme}
+              backgroundImage={isResponderMode ? null : frameImage}
+            >
+              <Header
+                title={headerTitle}
+                subtitle={headerSubtitle}
+                headerColor={activeTheme.headerColor}
+                compact={contextValue.screen === 'quiz' && isResponderMode}
+              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={routeKey}
+                  variants={screenVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className="flex min-h-0 flex-1 overflow-hidden"
+                >
+                  {protectedContent}
+                </motion.div>
+              </AnimatePresence>
+            </Frame>
+          )}
         </div>
 
         {!isResponderMode && !isRankingPreviewMode && canAccessMode && selectedLevel && (

@@ -1,5 +1,6 @@
 import { ExportButton } from '@/components/ExportButton'
 import type { Level } from '@/types/quiz'
+import { shouldShowQuestionImage } from '@/utils/question-image'
 import type { RefObject } from 'react'
 
 interface LevelResultScreenProps {
@@ -47,14 +48,21 @@ export const LevelResultScreen = ({
       <div className="mt-4 flex-1 space-y-2 overflow-auto pr-1">
         {level.questions.map((question, index) => {
           const isCorrect = results[question.id]
+          const imagePath = uploadedImages[question.id] ?? question.imagePath
+          const showImage =
+            level.mode === 'blank' &&
+            shouldShowQuestionImage({
+              imagePath,
+              hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
+            })
           return (
             <div
               key={question.id}
               className="flex items-center gap-2 rounded-xl border border-white/25 bg-black/30 p-2 text-left"
             >
-              {level.mode === 'blank' && (
+              {showImage && (
                 <img
-                  src={uploadedImages[question.id] ?? question.imagePath}
+                  src={imagePath}
                   alt={question.question || question.prompt}
                   className="h-10 w-10 rounded-full border border-white/25 object-cover"
                 />

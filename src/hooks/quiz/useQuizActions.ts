@@ -39,6 +39,8 @@ interface UseQuizActionsParams {
   currentUserId: string | null
   responderName: string
   responderAvatarDataUrl: string | null
+  fallbackResponderName: string
+  fallbackResponderAvatarUrl: string | null
   responderAvatarFile: File | null
   remoteEnabled: boolean
   setCategories: Dispatch<SetStateAction<Category[]>>
@@ -115,6 +117,7 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     setFrameImage: params.setFrameImage,
     setUploadedImages: params.setUploadedImages,
     setCategories: params.setCategories,
+    setRankings: params.setRankings,
   })
 
   const shareActions = useShareActions({
@@ -130,6 +133,8 @@ export const useQuizActions = (params: UseQuizActionsParams) => {
     currentUserId: params.currentUserId,
     responderName: params.responderName,
     responderAvatarDataUrl: params.responderAvatarDataUrl,
+    fallbackResponderName: params.fallbackResponderName,
+    fallbackResponderAvatarUrl: params.fallbackResponderAvatarUrl,
     responderAvatarFile: params.responderAvatarFile,
     answers: params.answers,
     results: params.results,

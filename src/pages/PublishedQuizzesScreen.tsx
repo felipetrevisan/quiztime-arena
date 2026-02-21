@@ -1,5 +1,5 @@
-import { useLocalStorageState } from '@/utils/storage'
 import type { Category, RankingEntry } from '@/types/quiz'
+import { useLocalStorageState } from '@/utils/storage'
 import { useEffect } from 'react'
 
 interface PublishedQuizzesScreenProps {

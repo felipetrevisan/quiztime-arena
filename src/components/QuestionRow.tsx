@@ -8,6 +8,7 @@ interface QuestionRowProps {
   isBlankMode?: boolean
   answerMode?: AnswerMode
   choiceOptions?: string[]
+  showQuestionImage?: boolean
   showOptionImage?: boolean
   answer: string
   corrected: boolean
@@ -25,6 +26,7 @@ export const QuestionRow = ({
   isBlankMode = false,
   answerMode = 'text',
   choiceOptions = [],
+  showQuestionImage = true,
   showOptionImage = true,
   answer,
   corrected,
@@ -58,11 +60,13 @@ export const QuestionRow = ({
         }}
       >
         <div className="space-y-3">
-          <img
-            src={imageOverride ?? question.imagePath}
-            alt={`Imagem da pergunta ${index + 1}`}
-            className="h-44 w-full rounded-2xl border border-white/25 object-cover shadow-lg"
-          />
+          {showQuestionImage && (
+            <img
+              src={imageOverride ?? question.imagePath}
+              alt={`Imagem da pergunta ${index + 1}`}
+              className="h-44 w-full rounded-2xl border border-white/25 object-cover shadow-lg"
+            />
+          )}
 
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">

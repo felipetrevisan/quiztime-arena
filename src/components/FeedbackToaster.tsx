@@ -27,6 +27,7 @@ export const FeedbackToaster = ({ toasts, onDismiss }: FeedbackToasterProps) => 
       {toasts.map((toast) => (
         <div
           key={toast.id}
+          // biome-ignore lint/a11y/useSemanticElements: role is ok
           role="status"
           className={`pointer-events-auto rounded-xl border px-3 py-2 shadow-2xl backdrop-blur ${toneClassName[toast.tone]}`}
         >

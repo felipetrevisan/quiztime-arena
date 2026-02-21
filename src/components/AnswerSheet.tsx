@@ -1,4 +1,5 @@
 import type { Level, ThemeOption } from '@/types/quiz'
+import { shouldShowQuestionImage } from '@/utils/question-image'
 
 interface AnswerSheetProps {
   theme: ThemeOption
@@ -43,14 +44,21 @@ export const AnswerSheet = ({
         {level.questions.map((question, index) => {
           const isCorrect = results[question.id]
           const label = question.question || question.prompt || `Alternativa ${index + 1}`
+          const imagePath = imageOverrides[question.id] ?? question.imagePath
+          const showImage =
+            level.mode === 'blank' &&
+            shouldShowQuestionImage({
+              imagePath,
+              hideDefaultQuestionImage: level.hideDefaultQuestionImage ?? true,
+            })
           return (
             <div
               key={question.id}
               className="flex items-center gap-2 rounded-xl border border-white/25 bg-black/25 p-2 text-xs"
             >
-              {level.mode === 'blank' && (
+              {showImage && (
                 <img
-                  src={imageOverrides[question.id] ?? question.imagePath}
+                  src={imagePath}
                   alt="Logo"
                   className="h-9 w-9 rounded-full border border-white/30 object-cover"
                 />

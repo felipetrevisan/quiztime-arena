@@ -8,7 +8,7 @@ import { buildPublicAppUrl } from '@/utils/url'
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { adminEmails, levelKey } from './quiz/shared'
+import { adminEmails, getUserProfile, levelKey } from './quiz/shared'
 import { useQuizActions } from './quiz/useQuizActions'
 import {
   useAccessAndSharedQuery,
@@ -154,6 +154,7 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
 
   const userEmail = session?.user.email?.toLowerCase() ?? ''
   const isAdmin = !remoteEnabled || adminEmails.length === 0 || adminEmails.includes(userEmail)
+  const sessionProfile = getUserProfile(session)
 
   const activeRecord = useMemo(() => {
     if (!selectedCategory || !selectedLevel) {
@@ -309,7 +310,10 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     handleBackgroundUpload,
     handleQuestionImageUpload,
     handleAddCategory,
+    handleUpdateCategory,
     handleAddLevel,
+    handleGenerateLevelQuestions,
+    handleImportLevelQuestions,
     handleUpdateLevel,
     handleDeleteLevel,
     handleToggleLevelPublished,
@@ -348,6 +352,8 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     currentUserId: session?.user.id ?? null,
     responderName,
     responderAvatarDataUrl,
+    fallbackResponderName: sessionProfile.name,
+    fallbackResponderAvatarUrl: sessionProfile.avatarUrl,
     responderAvatarFile,
     remoteEnabled,
     setCategories,
@@ -447,7 +453,10 @@ export const useQuizAppController = (): UseQuizAppControllerResult => {
     handleBackgroundUpload,
     handleQuestionImageUpload,
     handleAddCategory,
+    handleUpdateCategory,
     handleAddLevel,
+    handleGenerateLevelQuestions,
+    handleImportLevelQuestions,
     handleUpdateLevel,
     handleDeleteLevel,
     handleToggleLevelPublished,
